@@ -1204,25 +1204,16 @@ function updateMessagesBadge() {
 
 // Voir une conversation complète
 async function viewThread(threadId) {
-    try {
-        // Marquer comme lu
-        await fetch(`/api/messages/threads/${threadId}/mark-read`, {
-            method: 'POST'
-        });
+    const thread = allThreads.find(t => t.id === threadId);
+    if (!thread) return;
 
-        // Recharger les threads pour mettre à jour le badge
-        loadThreads();
+    // 1. Afficher le modal immédiatement avec Skeleton
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.style.zIndex = '10001';
+    modal.id = `thread-modal-${threadId}`;
 
-        const response = await fetch(`/api/messages/threads/${threadId}/messages`);
-        const messages = await response.json();
-        const thread = allThreads.find(t => t.id === threadId);
-
-        if (!thread) return;
-
-        const modal = document.createElement('div');
-        modal.className = 'modal active';
-        modal.style.zIndex = '10001';
-        modal.innerHTML = `
+    modal.innerHTML = `
       <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
           <div>
@@ -1236,48 +1227,101 @@ async function viewThread(threadId) {
           <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
         </div>
 
-        <div style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; max-height: 50vh;">
-          ${messages.map(msg => {
-            const isCustomer = msg.sender_type === 'customer';
-            return `
-              <div style="margin-bottom: 1.5rem; display: flex; justify-content: ${isCustomer ? 'flex-start' : 'flex-end'};">
-                <div style="max-width: 70%; background: ${isCustomer ? 'white' : 'var(--wood-dark)'}; color: ${isCustomer ? 'var(--slate-gray)' : 'white'}; padding: 1rem; border-radius: 15px; box-shadow: var(--shadow-light);">
-                  <div style="margin-bottom: 0.5rem;">
-                    <strong>${msg.sender_name}</strong>
-                    <span style="font-size: 0.85rem; opacity: 0.8; margin-left: 0.5rem;">
-                      ${new Date(msg.created_at).toLocaleString('fr-FR')}
-                    </span>
-                  </div>
-                  <div style="white-space: pre-wrap; line-height: 1.5;">${msg.message}</div>
-                  ${msg.has_attachments && msg.attachments ? `
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid ${isCustomer ? '#eee' : 'rgba(255,255,255,0.3)'};">
-                      <strong style="font-size: 0.9rem;">📎 Pièces jointes:</strong>
-                      ${msg.attachments.map(att => `
-                        <div style="margin-top: 0.5rem;">
-                          <a href="/attachments/${att.file_path}" target="_blank" style="color: ${isCustomer ? 'var(--wood-dark)' : 'white'}; text-decoration: underline;">
-                            ${att.filename}
-                          </a>
-                        </div>
-                      `).join('')}
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            `;
-        }).join('')}
+        <div id="thread-messages-container" style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; max-height: 50vh;">
+           <!-- SKELETON LOADER -->
+           <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+               <!-- Message client -->
+               <div style="display: flex; justify-content: flex-start;">
+                   <div style="width: 70%; background: white; padding: 1rem; border-radius: 15px;">
+                       <div style="height: 20px; width: 30%; background: #eee; border-radius: 4px; margin-bottom: 10px; animation: skeletonPulse 1.5s infinite;"></div>
+                       <div style="height: 15px; width: 100%; background: #eee; border-radius: 4px; margin-bottom: 5px; animation: skeletonPulse 1.5s infinite;"></div>
+                       <div style="height: 15px; width: 80%; background: #eee; border-radius: 4px; animation: skeletonPulse 1.5s infinite;"></div>
+                   </div>
+               </div>
+               
+               <!-- Message admin -->
+               <div style="display: flex; justify-content: flex-end;">
+                   <div style="width: 70%; background: var(--wood-light); padding: 1rem; border-radius: 15px; opacity: 0.3;">
+                       <div style="height: 20px; width: 30%; background: rgba(0,0,0,0.1); border-radius: 4px; margin-bottom: 10px; animation: skeletonPulse 1.5s infinite;"></div>
+                       <div style="height: 15px; width: 90%; background: rgba(0,0,0,0.1); border-radius: 4px; animation: skeletonPulse 1.5s infinite;"></div>
+                   </div>
+               </div>
+           </div>
         </div>
 
-        <div>
-          <button onclick="replyToThread(${threadId})" class="btn btn-primary" style="width: 100%; padding: 1rem;">
-            💬 Répondre
+        <div id="thread-actions">
+          <button disabled class="btn btn-primary" style="width: 100%; padding: 1rem; opacity: 0.7; cursor: wait;">
+            Chargement de la conversation... ⏳
           </button>
         </div>
       </div>
     `;
 
-        document.body.appendChild(modal);
+    document.body.appendChild(modal);
+
+    try {
+        // En parallèle : Marquer comme lu et charger les messages
+        const responses = await Promise.all([
+            fetch(`/api/messages/threads/${threadId}/messages`),
+            fetch(`/api/messages/threads/${threadId}/mark-read`, { method: 'POST' })
+        ]);
+
+        const messagesResponse = responses[0];
+        const messages = await messagesResponse.json();
+
+        // 2. Mettre à jour le contenu avec les vrais messages
+        const container = modal.querySelector('#thread-messages-container');
+
+        if (messages.length === 0) {
+            container.innerHTML = `<div style="text-align: center; color: var(--slate-gray); padding: 2rem;">Aucun message</div>`;
+        } else {
+            container.innerHTML = messages.map(msg => {
+                const isCustomer = msg.sender_type === 'customer';
+                return `
+                  <div style="margin-bottom: 1.5rem; display: flex; justify-content: ${isCustomer ? 'flex-start' : 'flex-end'};">
+                    <div style="max-width: 70%; background: ${isCustomer ? 'white' : 'var(--wood-dark)'}; color: ${isCustomer ? 'var(--slate-gray)' : 'white'}; padding: 1rem; border-radius: 15px; box-shadow: var(--shadow-light);">
+                      <div style="margin-bottom: 0.5rem;">
+                        <strong>${msg.sender_name}</strong>
+                        <span style="font-size: 0.85rem; opacity: 0.8; margin-left: 0.5rem;">
+                          ${new Date(msg.created_at).toLocaleString('fr-FR')}
+                        </span>
+                      </div>
+                      <div style="white-space: pre-wrap; line-height: 1.5;">${msg.message}</div>
+                      ${msg.has_attachments && msg.attachments ? `
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid ${isCustomer ? '#eee' : 'rgba(255,255,255,0.3)'};">
+                          <strong style="font-size: 0.9rem;">📎 Pièces jointes:</strong>
+                          ${msg.attachments.map(att => `
+                            <div style="margin-top: 0.5rem;">
+                              <a href="/attachments/${att.file_path}" target="_blank" style="color: ${isCustomer ? 'var(--wood-dark)' : 'white'}; text-decoration: underline;">
+                                ${att.filename}
+                              </a>
+                            </div>
+                          `).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                `;
+            }).join('');
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 3. Activer le bouton de réponse
+        const actionsContainer = modal.querySelector('#thread-actions');
+        actionsContainer.innerHTML = `
+          <button onclick="replyToThread(${threadId})" class="btn btn-primary" style="width: 100%; padding: 1rem;">
+            💬 Répondre
+          </button>
+        `;
+
+        // Rafraîchir la liste en arrière-plan (pour les badges non lus)
+        loadThreads();
+
     } catch (error) {
         console.error('Erreur:', error);
+        modal.remove();
         showError('Erreur lors du chargement de la conversation');
     }
 }
