@@ -162,6 +162,7 @@ function displayProducts() {
 }
 
 // Afficher le modal d'ajout de produit
+// Afficher le modal d'ajout de produit
 function showAddProductModal() {
     currentEditingProduct = null;
     existingImages = [];
@@ -169,7 +170,15 @@ function showAddProductModal() {
     imagesToDelete = [];
     window.allImagesOrderBoutDeBois = [];
     document.getElementById('modal-title').textContent = 'Ajouter un produit';
+
+    // Réinitialiser et afficher le formulaire
     document.getElementById('product-form').reset();
+    document.getElementById('product-form').style.display = 'block';
+
+    // Cacher le skeleton s'il est visible
+    const skeleton = document.getElementById('modal-skeleton');
+    if (skeleton) skeleton.style.display = 'none';
+
     document.getElementById('product-id').value = '';
 
     // Réinitialiser l'input file
@@ -185,25 +194,40 @@ function showAddProductModal() {
 
 // Modifier un produit
 async function editProduct(productId) {
+    // Afficher le modal immédiatement avec skeleton
+    const modal = document.getElementById('product-modal');
+    const form = document.getElementById('product-form');
+    const skeleton = document.getElementById('modal-skeleton');
+
+    document.getElementById('modal-title').textContent = 'Modifier le produit';
+    form.style.display = 'none';
+    if (skeleton) skeleton.style.display = 'block';
+    modal.classList.add('active');
+
+    // Chercher d'abord dans les produits chargés localement pour les infos de base (optionnel, mais bon pour la réactivité)
     currentEditingProduct = allProducts.find(p => p.id === productId);
 
-    if (!currentEditingProduct) return;
-
-    // Charger les images du produit
+    // Charger les détails complets (images, etc)
     try {
         const response = await fetch(`/api/products/${productId}`);
         const product = await response.json();
+        currentEditingProduct = product; // Update with full details
         existingImages = (product.images || []).sort((a, b) => a.display_order - b.display_order);
     } catch (error) {
         console.error('Erreur chargement images:', error);
         existingImages = [];
     }
 
+    if (!currentEditingProduct) {
+        closeProductModal();
+        return;
+    }
+
     newImageFiles = [];
     imagesToDelete = [];
     window.allImagesOrderBoutDeBois = [];
 
-    document.getElementById('modal-title').textContent = 'Modifier le produit';
+    // Remplir le formulaire
     document.getElementById('product-id').value = currentEditingProduct.id;
     document.getElementById('product-name').value = currentEditingProduct.name;
     document.getElementById('product-category').value = currentEditingProduct.category;
@@ -225,7 +249,9 @@ async function editProduct(productId) {
     // Cacher l'aperçu des nouvelles images
     document.getElementById('new-images-preview').style.display = 'none';
 
-    document.getElementById('product-modal').classList.add('active');
+    // Cacher le skeleton et afficher le formulaire
+    if (skeleton) skeleton.style.display = 'none';
+    form.style.display = 'block';
 }
 
 // Fermer le modal
