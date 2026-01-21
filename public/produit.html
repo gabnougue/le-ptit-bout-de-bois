@@ -53,10 +53,65 @@
     <!-- Détails du produit -->
     <div id="product-details" style="background: white; border-radius: 12px; padding: 2rem;
                                      box-shadow: var(--shadow-medium); border: 3px solid var(--wood-light);">
-      <!-- Le contenu sera chargé ici -->
-      <p style="text-align: center; padding: 3rem; color: var(--wood-medium);">
-        Chargement du produit...
-      </p>
+      <!-- Skeleton loader pour le produit -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
+        <!-- Skeleton Image -->
+        <div
+          style="height: 400px; background: linear-gradient(135deg, var(--wood-light), var(--cream)); border-radius: 12px; filter: blur(8px); animation: skeletonPulse 1.5s ease-in-out infinite;">
+        </div>
+
+        <!-- Skeleton Info -->
+        <div>
+          <!-- Catégorie -->
+          <div
+            style="height: 24px; width: 100px; background: var(--wood-light); border-radius: 20px; margin-bottom: 1rem; animation: skeletonPulse 1.5s ease-in-out infinite;">
+          </div>
+          <!-- Titre -->
+          <div
+            style="height: 48px; width: 80%; background: var(--wood-light); border-radius: 8px; margin-bottom: 1.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.1s;">
+          </div>
+
+          <!-- Bloc essence bois -->
+          <div
+            style="height: 80px; width: 100%; background: var(--cream); border-radius: 8px; margin-bottom: 1.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.2s;">
+          </div>
+
+          <!-- Description -->
+          <div
+            style="height: 16px; width: 100%; background: var(--wood-light); border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.3s;">
+          </div>
+          <div
+            style="height: 16px; width: 95%; background: var(--wood-light); border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.3s;">
+          </div>
+          <div
+            style="height: 16px; width: 60%; background: var(--wood-light); border-radius: 4px; margin-bottom: 2rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.3s;">
+          </div>
+
+          <!-- Prix -->
+          <div
+            style="height: 100px; width: 100%; background: linear-gradient(135deg, var(--wood-light), var(--wood-medium)); border-radius: 12px; margin-bottom: 2rem; opacity: 0.5; animation: skeletonPulse 1.5s ease-in-out infinite 0.4s;">
+          </div>
+
+          <!-- Boutons -->
+          <div
+            style="height: 60px; width: 100%; background: var(--accent-orange); opacity: 0.3; border-radius: 8px; animation: skeletonPulse 1.5s ease-in-out infinite 0.5s;">
+          </div>
+        </div>
+      </div>
+
+      <style>
+        @keyframes skeletonPulse {
+
+          0%,
+          100% {
+            opacity: 0.4;
+          }
+
+          50% {
+            opacity: 0.8;
+          }
+        }
+      </style>
     </div>
 
     <!-- Produits similaires -->
