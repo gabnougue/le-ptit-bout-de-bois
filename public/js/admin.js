@@ -676,16 +676,9 @@ function removeNewImageGlobally(globalIndex) {
 }
 
 // Enregistrer un produit
+// Enregistrer un produit
 async function saveProduct(event) {
     event.preventDefault();
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.textContent;
-
-    // État de chargement sur le bouton
-    submitBtn.classList.add('btn-loading');
-    submitBtn.innerHTML = '<span>' + originalBtnText + '</span>'; // Envelopper texte pour cacher
-
 
     const productId = document.getElementById('product-id').value;
     const formData = new FormData();
@@ -709,6 +702,16 @@ async function saveProduct(event) {
     newImageFiles.forEach((file) => {
         formData.append('images', file);
     });
+
+    // Gestion Loader Bouton
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    let originalBtnText = '';
+
+    if (submitBtn) {
+        originalBtnText = submitBtn.textContent;
+        submitBtn.classList.add('btn-loading');
+        submitBtn.innerHTML = '<span>' + originalBtnText + '</span>';
+    }
 
     try {
         const url = productId ? `/api/admin/products/${productId}` : '/api/admin/products';
