@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,12 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
   <!-- Header -->
   <header>
@@ -28,7 +32,10 @@
       <li><a href="/catalogue">Catalogue</a></li>
       <li><a href="/panier">Panier <span id="cart-count">(0)</span></a></li>
       <li><a href="/contact">Contact</a></li>
-      <li><a href="/boutique" style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
+      <li><a href="/boutique"
+          style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
     </ul>
   </nav>
 
@@ -45,7 +52,8 @@
         🔍 Filtrer les créations
       </h3>
 
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem;">
+      <div
+        style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem;">
         <!-- Conteneur des filtres catégorie et type de bois -->
         <div style="flex: 1; min-width: 300px;">
           <!-- Filtres par catégorie -->
@@ -71,15 +79,15 @@
 
         <!-- Barre de recherche -->
         <div style="flex: 0 0 auto; min-width: 250px;">
-          <input type="text" id="search-input" placeholder="Rechercher..."
-                 style="width: 100%; padding: 0.5rem 1rem; border: 2px solid var(--wood-light);
+          <input type="text" id="search-input" placeholder="Rechercher..." style="width: 100%; padding: 0.5rem 1rem; border: 2px solid var(--wood-light);
                         border-radius: 8px; font-size: 1rem; background: var(--cream);">
         </div>
       </div>
 
       <!-- Filtre par prix -->
       <div class="form-group" style="margin-top: 1.5rem;">
-        <label for="price-filter" style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">
+        <label for="price-filter"
+          style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">
           Prix maximum : <span id="price-value" style="color: var(--accent-orange); font-weight: 700;">100</span> €
         </label>
         <input type="range" id="price-filter" min="0" max="100" value="100">
@@ -93,14 +101,95 @@
     </div>
 
     <!-- Compteur de produits -->
-    <p id="product-count" style="text-align: center; color: var(--wood-medium); margin-bottom: 1rem; font-size: 1.1rem;">
-      Chargement des produits...
+    <p id="product-count"
+      style="text-align: center; color: var(--wood-medium); margin-bottom: 1rem; font-size: 1.1rem;">
+      &nbsp;
     </p>
 
     <!-- Grille de produits -->
     <div class="product-grid" id="products-container">
-      <!-- Les produits seront chargés ici -->
+      <!-- Skeleton cards au chargement -->
+      <div class="product-card skeleton-card">
+        <div class="skeleton-image"
+          style="height: 200px; background: linear-gradient(135deg, var(--wood-light), var(--cream)); border-radius: 12px; filter: blur(8px); animation: skeletonPulse 1.5s ease-in-out infinite;">
+        </div>
+        <div class="product-info">
+          <div
+            style="height: 20px; width: 60px; background: var(--wood-light); border-radius: 20px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite;">
+          </div>
+          <div
+            style="height: 24px; width: 80%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.1s;">
+          </div>
+          <div
+            style="height: 16px; width: 50%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.2s;">
+          </div>
+          <div
+            style="height: 16px; width: 90%; background: var(--wood-light); border-radius: 6px; margin-bottom: 1rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.3s;">
+          </div>
+          <div
+            style="height: 28px; width: 40%; background: var(--accent-orange); opacity: 0.3; border-radius: 6px; animation: skeletonPulse 1.5s ease-in-out infinite 0.4s;">
+          </div>
+        </div>
+      </div>
+      <div class="product-card skeleton-card">
+        <div class="skeleton-image"
+          style="height: 200px; background: linear-gradient(135deg, var(--wood-light), var(--cream)); border-radius: 12px; filter: blur(8px); animation: skeletonPulse 1.5s ease-in-out infinite 0.2s;">
+        </div>
+        <div class="product-info">
+          <div
+            style="height: 20px; width: 60px; background: var(--wood-light); border-radius: 20px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.3s;">
+          </div>
+          <div
+            style="height: 24px; width: 70%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.4s;">
+          </div>
+          <div
+            style="height: 16px; width: 45%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.5s;">
+          </div>
+          <div
+            style="height: 16px; width: 85%; background: var(--wood-light); border-radius: 6px; margin-bottom: 1rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.6s;">
+          </div>
+          <div
+            style="height: 28px; width: 40%; background: var(--accent-orange); opacity: 0.3; border-radius: 6px; animation: skeletonPulse 1.5s ease-in-out infinite 0.7s;">
+          </div>
+        </div>
+      </div>
+      <div class="product-card skeleton-card">
+        <div class="skeleton-image"
+          style="height: 200px; background: linear-gradient(135deg, var(--wood-light), var(--cream)); border-radius: 12px; filter: blur(8px); animation: skeletonPulse 1.5s ease-in-out infinite 0.4s;">
+        </div>
+        <div class="product-info">
+          <div
+            style="height: 20px; width: 60px; background: var(--wood-light); border-radius: 20px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.5s;">
+          </div>
+          <div
+            style="height: 24px; width: 75%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.6s;">
+          </div>
+          <div
+            style="height: 16px; width: 55%; background: var(--wood-light); border-radius: 6px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.7s;">
+          </div>
+          <div
+            style="height: 16px; width: 80%; background: var(--wood-light); border-radius: 6px; margin-bottom: 1rem; animation: skeletonPulse 1.5s ease-in-out infinite 0.8s;">
+          </div>
+          <div
+            style="height: 28px; width: 40%; background: var(--accent-orange); opacity: 0.3; border-radius: 6px; animation: skeletonPulse 1.5s ease-in-out infinite 0.9s;">
+          </div>
+        </div>
+      </div>
     </div>
+
+    <style>
+      @keyframes skeletonPulse {
+
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+
+        50% {
+          opacity: 0.8;
+        }
+      }
+    </style>
 
     <!-- Message si aucun produit -->
     <div id="no-products" style="display: none; text-align: center; padding: 3rem; color: var(--wood-medium);">
@@ -143,4 +232,5 @@
     createWoodChips();
   </script>
 </body>
+
 </html>
