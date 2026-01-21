@@ -13,22 +13,45 @@ let currentMaxPrice = 100;
 // Charger les catégories
 async function loadCategories() {
   try {
-    const response = await fetch('/api/products/meta/categories');
-    allCategories = await response.json();
+    // Utiliser l'API settings pour avoir toutes les catégories définies dans l'admin
+    const response = await fetch('/api/settings/categories');
+    const categoriesData = await response.json();
+
+    // Normaliser les données (si c'est un tableau d'objets ou de strings)
+    // L'API settings renvoie des objets {id, name, ...}
+    // L'API products renvoyait des strings ["nom", ...]
+    allCategories = categoriesData.map(c => typeof c === 'object' ? c.name : c);
+
     renderCategoryFilters();
   } catch (error) {
     console.error('Erreur chargement catégories:', error);
+    // Fallback sur l'API products si settings échoue
+    try {
+      const resp = await fetch('/api/products/meta/categories');
+      allCategories = await resp.json();
+      renderCategoryFilters();
+    } catch (e) { console.error('Erreur fallback catégories:', e); }
   }
 }
 
 // Charger les types de bois
 async function loadWoodTypes() {
   try {
-    const response = await fetch('/api/products/meta/wood-types');
-    allWoodTypes = await response.json();
+    // Utiliser l'API settings pour avoir tous les types de bois définis
+    const response = await fetch('/api/settings/wood-types');
+    const woodTypesData = await response.json();
+
+    allWoodTypes = woodTypesData.map(w => typeof w === 'object' ? w.name : w);
+
     renderWoodTypeFilters();
   } catch (error) {
     console.error('Erreur chargement types de bois:', error);
+    // Fallback
+    try {
+      const resp = await fetch('/api/products/meta/wood-types');
+      allWoodTypes = await resp.json();
+      renderWoodTypeFilters();
+    } catch (e) { console.error('Erreur fallback bois:', e); }
   }
 }
 
@@ -48,7 +71,10 @@ function renderCategoryFilters() {
   `;
 
   // Boutons pour chaque catégorie
-  allCategories.forEach(category => {
+  // Filtrer les doublons et trier
+  const uniqueCategories = [...new Set(allCategories)].sort();
+
+  uniqueCategories.forEach(category => {
     html += `
       <button class="category-filter-btn" data-category="${category}"
               style="padding: 0.5rem 1rem; border: 2px solid var(--wood-medium); border-radius: 8px;
@@ -84,7 +110,10 @@ function renderWoodTypeFilters() {
   `;
 
   // Boutons pour chaque type de bois
-  allWoodTypes.forEach(woodType => {
+  // Filtrer les doublons et trier
+  const uniqueWoodTypes = [...new Set(allWoodTypes)].sort();
+
+  uniqueWoodTypes.forEach(woodType => {
     html += `
       <button class="wood-type-filter-btn" data-wood-type="${woodType}"
               style="padding: 0.5rem 1rem; border: 2px solid var(--wood-medium); border-radius: 8px;
