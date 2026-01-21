@@ -13,54 +13,6 @@ let existingImages = []; // Images déjà enregistrées
 let newImageFiles = []; // Nouveaux fichiers sélectionnés
 let imagesToDelete = []; // IDs des images à supprimer (appliqué à la sauvegarde)
 
-// Injection des styles pour les skeletons et loaders (Sécurisé)
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        const adminStyles = document.createElement('style');
-        adminStyles.innerHTML = `
-        @keyframes skeletonPulse { 0% { opacity: 0.6; } 50% { opacity: 0.8; } 100% { opacity: 0.6; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .skeleton-loading {
-          color: transparent !important;
-          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-          background-size: 200% 100%;
-          animation: skeletonPulse 1.5s infinite;
-          border-radius: 4px;
-          pointer-events: none;
-        }
-        .skeleton-loading::placeholder { color: transparent; }
-        
-        .btn-loading {
-          position: relative;
-          pointer-events: none;
-          opacity: 0.8;
-        }
-        .btn-loading span { opacity: 0; }
-        .btn-loading::after {
-          content: "";
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 20px; height: 20px;
-          margin-top: -10px; margin-left: -10px;
-          border: 3px solid rgba(255,255,255,0.3);
-          border-radius: 50%;
-          border-top: 3px solid white;
-          animation: spin 1s linear infinite;
-        }
-        .thread-skeleton-header { width: 60%; height: 30px; margin-bottom: 10px; }
-        .thread-skeleton-sub { width: 40%; height: 20px; }
-        .thread-skeleton-msg { margin-bottom: 20px; border-radius: 15px; padding: 1rem; height: 80px; width: 70%; }
-        .thread-skeleton-msg.left { float: left; clear: both; background: white; }
-        .thread-skeleton-msg.right { float: right; clear: both; background: var(--wood-dark); opacity: 0.3; }
-        `;
-        document.head.appendChild(adminStyles);
-    } catch (e) {
-        console.warn('Impossible d\'injecter les styles admin', e);
-    }
-});
-
 // Variable globale pour garder l'ordre mixte des images
 if (typeof window.allImagesOrderBoutDeBois === 'undefined') {
     window.allImagesOrderBoutDeBois = [];
@@ -233,73 +185,60 @@ function showAddProductModal() {
 
 // Modifier un produit
 async function editProduct(productId) {
-    const modal = document.getElementById('product-modal');
-    if (!modal) return;
+    currentEditingProduct = allProducts.find(p => p.id === productId);
 
-    // 1. Afficher immédiatement
-    modal.classList.add('active');
-    const titleEl = document.getElementById('modal-title');
-    if (titleEl) titleEl.textContent = 'Modifier le produit';
+    if (!currentEditingProduct) return;
 
-    // 2. Mode Skeleton
-    const form = document.getElementById('product-form');
-    let inputs = [];
-    // Vérifier form avant d'utiliser querySelectorAll
-    if (form) {
-        inputs = form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => input.classList.add('skeleton-loading'));
-    }
+    // 1. Ouvrir le modal immédiatement
+    document.getElementById('modal-title').textContent = 'Modifier le produit';
+    document.getElementById('product-id').value = currentEditingProduct.id;
+    document.getElementById('product-name').value = currentEditingProduct.name;
+    document.getElementById('product-category').value = currentEditingProduct.category;
+    document.getElementById('product-wood').value = currentEditingProduct.wood_type;
+    document.getElementById('product-price').value = currentEditingProduct.price;
+    document.getElementById('product-stock').value = currentEditingProduct.stock;
+    document.getElementById('product-description').value = currentEditingProduct.description || '';
+    document.getElementById('product-perlouze-link').value = currentEditingProduct.perlouze_link || '';
 
-    // Réinitialiser images
-    newImageFiles = [];
-    imagesToDelete = [];
-    window.allImagesOrderBoutDeBois = [];
+    // Réinitialiser l'input file
     const imageInput = document.getElementById('product-images');
     if (imageInput) imageInput.value = '';
 
-    const existingContainer = document.getElementById('existing-images-container');
-    if (existingContainer) existingContainer.style.display = 'none';
-    const newContainer = document.getElementById('new-images-preview');
-    if (newContainer) newContainer.style.display = 'none';
+    // Cacher l'aperçu des nouvelles images
+    document.getElementById('new-images-preview').style.display = 'none';
 
-    // 3. Charger les données complètes
+    // Afficher un skeleton/loader pour les images existantes
+    const existingContainerDiv = document.getElementById('existing-images-container');
+    const existingContainer = document.getElementById('existing-images');
+    existingContainerDiv.style.display = 'block';
+
+    existingContainer.innerHTML = `
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite;"></div>
+            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite 0.2s;"></div>
+            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite 0.4s;"></div>
+        </div>
+        <style>@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }</style>
+    `;
+
+    document.getElementById('product-modal').classList.add('active');
+
+    // 2. Charger les images du produit en arrière-plan
     try {
         const response = await fetch(`/api/products/${productId}`);
-        if (!response.ok) throw new Error('Erreur fetch');
-
         const product = await response.json();
-        currentEditingProduct = product;
-
-        // Remplir les champs
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.value = val !== undefined ? val : '';
-        };
-
-        setVal('product-id', product.id);
-        setVal('product-name', product.name);
-        setVal('product-category', product.category);
-        setVal('product-wood', product.wood_type);
-        setVal('product-price', product.price);
-        setVal('product-stock', product.stock);
-        setVal('product-description', product.description || '');
-        setVal('product-perlouze-link', product.perlouze_link || '');
-
         existingImages = (product.images || []).sort((a, b) => a.display_order - b.display_order);
-
-        // 4. Retirer Skeleton et afficher images
-        if (inputs.length > 0) {
-            inputs.forEach(input => input.classList.remove('skeleton-loading'));
-        }
-        displayExistingImages();
-
     } catch (error) {
-        console.error('Erreur editProduct:', error);
-        if (inputs.length > 0) {
-            inputs.forEach(input => input.classList.remove('skeleton-loading'));
-        }
-        showError('Impossible de charger les détails du produit');
+        console.error('Erreur chargement images:', error);
+        existingImages = [];
     }
+
+    newImageFiles = [];
+    imagesToDelete = [];
+    window.allImagesOrderBoutDeBois = [];
+
+    // 3. Afficher les images réelles une fois chargées
+    displayExistingImages();
 }
 
 // Fermer le modal
@@ -676,7 +615,6 @@ function removeNewImageGlobally(globalIndex) {
 }
 
 // Enregistrer un produit
-// Enregistrer un produit
 async function saveProduct(event) {
     event.preventDefault();
 
@@ -702,16 +640,6 @@ async function saveProduct(event) {
     newImageFiles.forEach((file) => {
         formData.append('images', file);
     });
-
-    // Gestion Loader Bouton
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    let originalBtnText = '';
-
-    if (submitBtn) {
-        originalBtnText = submitBtn.textContent;
-        submitBtn.classList.add('btn-loading');
-        submitBtn.innerHTML = '<span>' + originalBtnText + '</span>';
-    }
 
     try {
         const url = productId ? `/api/admin/products/${productId}` : '/api/admin/products';
@@ -814,12 +742,6 @@ async function saveProduct(event) {
     } catch (error) {
         console.error('Erreur:', error);
         showError('Erreur lors de l\'enregistrement du produit');
-    } finally {
-        // Restaurer le bouton
-        if (submitBtn) {
-            submitBtn.classList.remove('btn-loading');
-            submitBtn.textContent = originalBtnText;
-        }
     }
 }
 
@@ -1252,63 +1174,33 @@ function updateMessagesBadge() {
 
 // Voir une conversation complète
 async function viewThread(threadId) {
-    // 1. Ouvrir modal skeleton immédiatement
-    const threadStub = allThreads.find(t => t.id === threadId) || { subject: 'Chargement...', customer_name: '...' };
-
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.style.zIndex = '10001';
-    modal.id = `thread-modal-${threadId}`;
-
-    // Contenu Skeleton
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
-          <div style="width: 100%">
-            <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.8rem;">
-               <div class="skeleton-loading thread-skeleton-header"></div>
-            </h3>
-            <p style="margin: 0.5rem 0 0 0; color: var(--slate-gray); font-size: 0.9rem;">
-               <div class="skeleton-loading thread-skeleton-sub"></div>
-            </p>
-          </div>
-          <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
-        </div>
-
-        <div id="thread-messages-container" style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; height: 400px; max-height: 50vh;">
-           <!-- Skeletons messages -->
-           <div class="skeleton-loading thread-skeleton-msg left"></div>
-           <div class="skeleton-loading thread-skeleton-msg right"></div>
-           <div class="skeleton-loading thread-skeleton-msg left"></div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
     try {
         // Marquer comme lu
-        await fetch(`/api/messages/threads/${threadId}/mark-read`, { method: 'POST' });
+        await fetch(`/api/messages/threads/${threadId}/mark-read`, {
+            method: 'POST'
+        });
+
+        // Recharger les threads pour mettre à jour le badge
         loadThreads();
 
         const response = await fetch(`/api/messages/threads/${threadId}/messages`);
         const messages = await response.json();
         const thread = allThreads.find(t => t.id === threadId);
 
-        if (!thread && !messages) {
-            modal.remove();
-            return;
-        }
+        if (!thread) return;
 
-        // Remplacer le contenu du modal avec les vraies données
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.style.zIndex = '10001';
         modal.innerHTML = `
       <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
           <div>
             <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.8rem;">
-              ${thread ? thread.subject : 'Conversation'}
+              ${thread.subject}
             </h3>
             <p style="margin: 0.5rem 0 0 0; color: var(--slate-gray); font-size: 0.9rem;">
-              <strong>${thread ? thread.customer_name : ''}</strong> (${thread ? thread.customer_email : ''})
+              <strong>${thread.customer_name}</strong> (${thread.customer_email})
             </p>
           </div>
           <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
@@ -1353,10 +1245,10 @@ async function viewThread(threadId) {
       </div>
     `;
 
+        document.body.appendChild(modal);
     } catch (error) {
         console.error('Erreur:', error);
         showError('Erreur lors du chargement de la conversation');
-        modal.remove();
     }
 }
 
