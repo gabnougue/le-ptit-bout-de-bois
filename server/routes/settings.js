@@ -11,11 +11,9 @@ const requireAdmin = (req, res, next) => {
 };
 
 // Récupérer tous les paramètres
-router.get('/', (req, res) => {
-  db.all('SELECT * FROM settings', [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+router.get('/', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM settings', []);
 
     // Convertir en objet clé-valeur
     const settings = {};
@@ -24,80 +22,82 @@ router.get('/', (req, res) => {
     });
 
     res.json(settings);
-  });
+  } catch (error) {
+    console.error('Erreur récupération paramètres:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Mettre à jour un paramètre
-router.put('/:key', requireAdmin, (req, res) => {
+router.put('/:key', requireAdmin, async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
 
-  db.run(`
-    INSERT INTO settings (key, value, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-  `, [key, value, value], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    await db.run(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+    `, [key, value, value]);
+
     res.json({
       success: true,
       message: 'Paramètre mis à jour'
     });
-  });
+  } catch (error) {
+    console.error('Erreur mise à jour paramètre:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== GESTION DES CATEGORIES =====
 
 // Récupérer toutes les catégories (public)
-router.get('/categories', (req, res) => {
-  db.all(
-    'SELECT * FROM categories ORDER BY name ASC',
-    [],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(rows);
-    }
-  );
+router.get('/categories', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM categories ORDER BY name ASC', []);
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur récupération catégories:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Ajouter une catégorie (admin)
-router.post('/categories', requireAdmin, (req, res) => {
+router.post('/categories', requireAdmin, async (req, res) => {
   const { name, emoji, description } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Nom de catégorie requis' });
   }
 
-  db.run(
-    'INSERT INTO categories (name, emoji, description) VALUES (?, ?, ?)',
-    [name.trim(), emoji || '🪵', description || ''],
-    function(err) {
-      if (err) {
-        if (err.message.includes('UNIQUE')) {
-          return res.status(400).json({ error: 'Cette catégorie existe déjà' });
-        }
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    const result = await db.run(
+      'INSERT INTO categories (name, emoji, description) VALUES (?, ?, ?)',
+      [name.trim(), emoji || '🪵', description || '']
+    );
 
-      res.json({
-        success: true,
-        message: 'Catégorie ajoutée',
-        category: {
-          id: this.lastID,
-          name: name.trim(),
-          emoji: emoji || '🪵',
-          description: description || ''
-        }
-      });
+    res.json({
+      success: true,
+      message: 'Catégorie ajoutée',
+      category: {
+        id: result.id,
+        name: name.trim(),
+        emoji: emoji || '🪵',
+        description: description || ''
+      }
+    });
+  } catch (error) {
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Cette catégorie existe déjà' });
     }
-  );
+    console.error('Erreur ajout catégorie:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Modifier une catégorie (admin)
-router.put('/categories/:id', requireAdmin, (req, res) => {
+router.put('/categories/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, emoji, description } = req.body;
 
@@ -105,156 +105,145 @@ router.put('/categories/:id', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Nom de catégorie requis' });
   }
 
-  db.run(
-    'UPDATE categories SET name = ?, emoji = ?, description = ? WHERE id = ?',
-    [name.trim(), emoji || '🪵', description || '', id],
-    function(err) {
-      if (err) {
-        if (err.message.includes('UNIQUE')) {
-          return res.status(400).json({ error: 'Cette catégorie existe déjà' });
-        }
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    const result = await db.run(
+      'UPDATE categories SET name = ?, emoji = ?, description = ? WHERE id = ?',
+      [name.trim(), emoji || '🪵', description || '', id]
+    );
 
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Catégorie non trouvée' });
-      }
-
-      res.json({
-        success: true,
-        message: 'Catégorie modifiée',
-        category: {
-          id: parseInt(id),
-          name: name.trim(),
-          emoji: emoji || '🪵',
-          description: description || ''
-        }
-      });
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Catégorie non trouvée' });
     }
-  );
+
+    res.json({
+      success: true,
+      message: 'Catégorie modifiée',
+      category: {
+        id: parseInt(id),
+        name: name.trim(),
+        emoji: emoji || '🪵',
+        description: description || ''
+      }
+    });
+  } catch (error) {
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Cette catégorie existe déjà' });
+    }
+    console.error('Erreur modification catégorie:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Supprimer une catégorie (admin)
-router.delete('/categories/:id', requireAdmin, (req, res) => {
+router.delete('/categories/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
 
-  // Vérifier si des produits utilisent cette catégorie
-  db.get(
-    'SELECT COUNT(*) as count FROM products WHERE category = (SELECT name FROM categories WHERE id = ?)',
-    [id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    // Vérifier si des produits utilisent cette catégorie
+    const row = await db.get(
+      'SELECT COUNT(*) as count FROM products WHERE category = (SELECT name FROM categories WHERE id = ?)',
+      [id]
+    );
 
-      if (row.count > 0) {
-        return res.status(400).json({
-          error: `Impossible de supprimer : ${row.count} produit(s) utilisent cette catégorie`
-        });
-      }
-
-      // Supprimer la catégorie
-      db.run('DELETE FROM categories WHERE id = ?', [id], function(err) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-
-        if (this.changes === 0) {
-          return res.status(404).json({ error: 'Catégorie non trouvée' });
-        }
-
-        res.json({
-          success: true,
-          message: 'Catégorie supprimée'
-        });
+    if (row.count > 0) {
+      return res.status(400).json({
+        error: `Impossible de supprimer : ${row.count} produit(s) utilisent cette catégorie`
       });
     }
-  );
+
+    // Supprimer la catégorie
+    const result = await db.run('DELETE FROM categories WHERE id = ?', [id]);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Catégorie non trouvée' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Catégorie supprimée'
+    });
+  } catch (error) {
+    console.error('Erreur suppression catégorie:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== GESTION DES TYPES DE BOIS =====
 
 // Récupérer tous les types de bois (public)
-router.get('/wood-types', (req, res) => {
-  db.all(
-    'SELECT * FROM wood_types ORDER BY name ASC',
-    [],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(rows);
-    }
-  );
+router.get('/wood-types', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM wood_types ORDER BY name ASC', []);
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur récupération types de bois:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Ajouter un type de bois (admin)
-router.post('/wood-types', requireAdmin, (req, res) => {
+router.post('/wood-types', requireAdmin, async (req, res) => {
   const { name } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Nom de type de bois requis' });
   }
 
-  db.run(
-    'INSERT INTO wood_types (name) VALUES (?)',
-    [name.trim()],
-    function(err) {
-      if (err) {
-        if (err.message.includes('UNIQUE')) {
-          return res.status(400).json({ error: 'Ce type de bois existe déjà' });
-        }
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    const result = await db.run(
+      'INSERT INTO wood_types (name) VALUES (?)',
+      [name.trim()]
+    );
 
-      res.json({
-        success: true,
-        message: 'Type de bois ajouté',
-        woodType: {
-          id: this.lastID,
-          name: name.trim()
-        }
-      });
+    res.json({
+      success: true,
+      message: 'Type de bois ajouté',
+      woodType: {
+        id: result.id,
+        name: name.trim()
+      }
+    });
+  } catch (error) {
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Ce type de bois existe déjà' });
     }
-  );
+    console.error('Erreur ajout type de bois:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Supprimer un type de bois (admin)
-router.delete('/wood-types/:id', requireAdmin, (req, res) => {
+router.delete('/wood-types/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
 
-  // Vérifier si des produits utilisent ce type de bois
-  db.get(
-    'SELECT COUNT(*) as count FROM products WHERE wood_type = (SELECT name FROM wood_types WHERE id = ?)',
-    [id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    // Vérifier si des produits utilisent ce type de bois
+    const row = await db.get(
+      'SELECT COUNT(*) as count FROM products WHERE wood_type = (SELECT name FROM wood_types WHERE id = ?)',
+      [id]
+    );
 
-      if (row.count > 0) {
-        return res.status(400).json({
-          error: `Impossible de supprimer : ${row.count} produit(s) utilisent ce type de bois`
-        });
-      }
-
-      // Supprimer le type de bois
-      db.run('DELETE FROM wood_types WHERE id = ?', [id], function(err) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-
-        if (this.changes === 0) {
-          return res.status(404).json({ error: 'Type de bois non trouvé' });
-        }
-
-        res.json({
-          success: true,
-          message: 'Type de bois supprimé'
-        });
+    if (row.count > 0) {
+      return res.status(400).json({
+        error: `Impossible de supprimer : ${row.count} produit(s) utilisent ce type de bois`
       });
     }
-  );
+
+    // Supprimer le type de bois
+    const result = await db.run('DELETE FROM wood_types WHERE id = ?', [id]);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Type de bois non trouvé' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Type de bois supprimé'
+    });
+  } catch (error) {
+    console.error('Erreur suppression type de bois:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

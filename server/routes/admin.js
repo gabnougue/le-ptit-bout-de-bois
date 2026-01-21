@@ -58,11 +58,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Identifiants manquants' });
   }
 
-  db.get('SELECT * FROM admins WHERE username = ?', [username], async (err, admin) => {
-    if (err) {
-      console.error('Erreur DB:', err);
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
+  try {
+    const admin = await db.get('SELECT * FROM admins WHERE username = ?', [username]);
 
     if (!admin) {
       return res.status(401).json({ error: 'Identifiants incorrects' });
@@ -84,7 +81,10 @@ router.post('/login', loginLimiter, async (req, res) => {
         email: admin.email
       }
     });
-  });
+  } catch (error) {
+    console.error('Erreur login:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 // Logout admin
@@ -108,15 +108,6 @@ router.get('/check-session', (req, res) => {
 
 // CRUD Produits
 
-// Middleware pour gérer les erreurs Multer
-const handleMulterError = (err, req, res, next) => {
-  if (err) {
-    console.error('Erreur Multer:', err);
-    return res.status(400).json({ error: err.message });
-  }
-  next();
-};
-
 // Créer un produit (avec plusieurs images)
 router.post('/products', requireAdmin, (req, res, next) => {
   upload.fields([{ name: 'images', maxCount: 10 }])(req, res, (err) => {
@@ -126,75 +117,61 @@ router.post('/products', requireAdmin, (req, res, next) => {
     }
     next();
   });
-}, (req, res) => {
+}, async (req, res) => {
   const { name, description, wood_type, price, category, stock, perlouze_link } = req.body;
 
-  // Démarrer une transaction
-  db.serialize(() => {
+  try {
     // Insérer le produit
-    db.run(`
+    const result = await db.run(`
       INSERT INTO products (name, description, wood_type, price, category, stock, perlouze_link)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [name, description, wood_type, price, category, stock, perlouze_link || null],
-    function(err) {
-      if (err) {
-        console.error('Erreur création produit:', err);
-        return res.status(500).json({ error: err.message });
+    `, [name, description, wood_type, price, category, stock, perlouze_link || null]);
+
+    const productId = result.id;
+
+    // Gérer les images si présentes
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      const images = req.files.images;
+      let primaryImagePath = null;
+
+      for (let index = 0; index < images.length; index++) {
+        const file = images[index];
+        const imagePath = `/images/products/${file.filename}`;
+        const isPrimary = index === 0 ? 1 : 0;
+
+        if (isPrimary) {
+          primaryImagePath = imagePath;
+        }
+
+        await db.run(`
+          INSERT INTO product_images (product_id, image_path, display_order, is_primary)
+          VALUES (?, ?, ?, ?)
+        `, [productId, imagePath, index + 1, isPrimary]);
       }
 
-      const productId = this.lastID;
-
-      // Gérer les images si présentes
-      if (req.files && req.files.images && req.files.images.length > 0) {
-        const images = req.files.images;
-        let insertedCount = 0;
-        let primaryImagePath = null;
-
-        images.forEach((file, index) => {
-          const imagePath = `/images/products/${file.filename}`;
-          const isPrimary = index === 0 ? 1 : 0;
-
-          if (isPrimary) {
-            primaryImagePath = imagePath;
-          }
-
-          db.run(`
-            INSERT INTO product_images (product_id, image_path, display_order, is_primary)
-            VALUES (?, ?, ?, ?)
-          `, [productId, imagePath, index + 1, isPrimary], (err) => {
-            if (err) {
-              console.error('Erreur insertion image:', err);
-            }
-
-            insertedCount++;
-
-            // Si toutes les images sont insérées
-            if (insertedCount === images.length) {
-              // Mettre à jour image_url du produit avec la première image
-              if (primaryImagePath) {
-                db.run(`UPDATE products SET image_url = ? WHERE id = ?`,
-                  [primaryImagePath, productId]);
-              }
-
-              res.json({
-                success: true,
-                productId: productId,
-                imagesCount: images.length,
-                message: 'Produit créé avec succès'
-              });
-            }
-          });
-        });
-      } else {
-        // Aucune image
-        res.json({
-          success: true,
-          productId: productId,
-          message: 'Produit créé avec succès (sans images)'
-        });
+      // Mettre à jour image_url du produit avec la première image
+      if (primaryImagePath) {
+        await db.run(`UPDATE products SET image_url = ? WHERE id = ?`, [primaryImagePath, productId]);
       }
-    });
-  });
+
+      res.json({
+        success: true,
+        productId: productId,
+        imagesCount: images.length,
+        message: 'Produit créé avec succès'
+      });
+    } else {
+      // Aucune image
+      res.json({
+        success: true,
+        productId: productId,
+        message: 'Produit créé avec succès (sans images)'
+      });
+    }
+  } catch (error) {
+    console.error('Erreur création produit:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Modifier un produit (ajout de nouvelles images)
@@ -206,100 +183,86 @@ router.put('/products/:id', requireAdmin, (req, res, next) => {
     }
     next();
   });
-}, (req, res) => {
+}, async (req, res) => {
   const { id } = req.params;
   const { name, description, wood_type, price, category, stock, perlouze_link } = req.body;
 
-  // Mettre à jour les informations du produit
-  db.run(`
-    UPDATE products
-    SET name = ?, description = ?, wood_type = ?, price = ?, category = ?,
-        stock = ?, perlouze_link = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `, [name, description, wood_type, price, category, stock, perlouze_link || null, id],
-  function(err) {
-    if (err) {
-      console.error('Erreur modification produit:', err);
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    // Mettre à jour les informations du produit
+    await db.run(`
+      UPDATE products
+      SET name = ?, description = ?, wood_type = ?, price = ?, category = ?,
+          stock = ?, perlouze_link = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [name, description, wood_type, price, category, stock, perlouze_link || null, id]);
 
     // Ajouter les nouvelles images si présentes
     if (req.files && req.files.images && req.files.images.length > 0) {
       // Trouver l'ordre maximal actuel
-      db.get(`SELECT MAX(display_order) as maxOrder FROM product_images WHERE product_id = ?`,
-        [id], (err, row) => {
-          const startOrder = (row && row.maxOrder !== null) ? row.maxOrder + 1 : 1;
-          const images = req.files.images;
-          let insertedCount = 0;
+      const row = await db.get(`SELECT MAX(display_order) as maxOrder FROM product_images WHERE product_id = ?`, [id]);
+      const startOrder = (row && row.maxOrder !== null) ? row.maxOrder + 1 : 1;
+      const images = req.files.images;
 
-          images.forEach((file, index) => {
-            const imagePath = `/images/products/${file.filename}`;
+      for (let index = 0; index < images.length; index++) {
+        const file = images[index];
+        const imagePath = `/images/products/${file.filename}`;
 
-            db.run(`
-              INSERT INTO product_images (product_id, image_path, display_order, is_primary)
-              VALUES (?, ?, ?, 0)
-            `, [id, imagePath, startOrder + index], (err) => {
-              if (err) {
-                console.error('Erreur insertion image:', err);
-              }
+        await db.run(`
+          INSERT INTO product_images (product_id, image_path, display_order, is_primary)
+          VALUES (?, ?, ?, 0)
+        `, [id, imagePath, startOrder + index]);
+      }
 
-              insertedCount++;
-
-              if (insertedCount === images.length) {
-                res.json({
-                  success: true,
-                  imagesAdded: images.length,
-                  message: 'Produit modifié avec succès'
-                });
-              }
-            });
-          });
-        });
+      res.json({
+        success: true,
+        imagesAdded: images.length,
+        message: 'Produit modifié avec succès'
+      });
     } else {
       res.json({
         success: true,
         message: 'Produit modifié avec succès'
       });
     }
-  });
+  } catch (error) {
+    console.error('Erreur modification produit:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Supprimer un produit
-router.delete('/products/:id', requireAdmin, (req, res) => {
+router.delete('/products/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
 
-  db.run('DELETE FROM products WHERE id = ?', [id], function(err) {
-    if (err) {
-      console.error('Erreur suppression produit:', err);
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    await db.run('DELETE FROM products WHERE id = ?', [id]);
     res.json({
       success: true,
       message: 'Produit supprimé avec succès'
     });
-  });
+  } catch (error) {
+    console.error('Erreur suppression produit:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Fonction utilitaire pour enrichir un produit avec ses images (admin)
 async function enrichProductAdmin(product) {
-  return new Promise((resolve, reject) => {
-    db.all(
+  try {
+    const images = await db.all(
       `SELECT id, image_path, display_order, is_primary
        FROM product_images
        WHERE product_id = ?
        ORDER BY display_order ASC`,
-      [product.id],
-      (err, images) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        product.images = images || [];
-        product.image_paths = images.map(img => img.image_path);
-        resolve(product);
-      }
+      [product.id]
     );
-  });
+
+    product.images = images || [];
+    product.image_paths = images.map(img => img.image_path);
+    return product;
+  } catch (err) {
+    throw err;
+  }
 }
 
 // Enrichir plusieurs produits (admin)
@@ -319,29 +282,27 @@ async function enrichProductsAdmin(products) {
 
 // Récupérer tous les produits (y compris en rupture)
 router.get('/products', requireAdmin, async (req, res) => {
-  db.all('SELECT * FROM products ORDER BY created_at DESC', [], async (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const rows = await db.all('SELECT * FROM products ORDER BY created_at DESC', []);
 
     // Enrichir avec les images
-    try {
-      const enrichedProducts = await enrichProductsAdmin(rows);
-      res.json(enrichedProducts);
-    } catch (error) {
-      console.error('Erreur enrichissement produits admin:', error);
-      res.json(rows); // Fallback sans enrichissement
-    }
-  });
+    const enrichedProducts = await enrichProductsAdmin(rows);
+    res.json(enrichedProducts);
+  } catch (error) {
+    console.error('Erreur récupération produits admin:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Supprimer une image spécifique
-router.delete('/product-images/:id', requireAdmin, (req, res) => {
+router.delete('/product-images/:id', requireAdmin, async (req, res) => {
   const imageId = req.params.id;
 
-  // Récupérer d'abord l'image pour connaître le product_id
-  db.get('SELECT * FROM product_images WHERE id = ?', [imageId], (err, image) => {
-    if (err || !image) {
+  try {
+    // Récupérer d'abord l'image pour connaître le product_id
+    const image = await db.get('SELECT * FROM product_images WHERE id = ?', [imageId]);
+
+    if (!image) {
       return res.status(404).json({ error: 'Image non trouvée' });
     }
 
@@ -349,47 +310,35 @@ router.delete('/product-images/:id', requireAdmin, (req, res) => {
     const wasPrimary = image.is_primary;
 
     // Supprimer l'image
-    db.run('DELETE FROM product_images WHERE id = ?', [imageId], function(err) {
-      if (err) {
-        console.error('Erreur suppression image:', err);
-        return res.status(500).json({ error: err.message });
-      }
+    await db.run('DELETE FROM product_images WHERE id = ?', [imageId]);
 
-      // Si c'était l'image principale, promouvoir la première image restante
-      if (wasPrimary) {
-        db.get(
-          'SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order ASC LIMIT 1',
-          [productId],
-          (err, firstImage) => {
-            if (firstImage) {
-              // Mettre cette image en principale
-              db.run(
-                'UPDATE product_images SET is_primary = 1 WHERE id = ?',
-                [firstImage.id]
-              );
+    // Si c'était l'image principale, promouvoir la première image restante
+    if (wasPrimary) {
+      const firstImage = await db.get(
+        'SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order ASC LIMIT 1',
+        [productId]
+      );
 
-              // Mettre à jour le produit
-              db.run(
-                'UPDATE products SET image_url = ? WHERE id = ?',
-                [firstImage.image_path, productId]
-              );
-            } else {
-              // Plus d'images, mettre à NULL
-              db.run('UPDATE products SET image_url = NULL WHERE id = ?', [productId]);
-            }
-
-            res.json({ success: true, message: 'Image supprimée' });
-          }
-        );
+      if (firstImage) {
+        // Mettre cette image en principale
+        await db.run('UPDATE product_images SET is_primary = 1 WHERE id = ?', [firstImage.id]);
+        // Mettre à jour le produit
+        await db.run('UPDATE products SET image_url = ? WHERE id = ?', [firstImage.image_path, productId]);
       } else {
-        res.json({ success: true, message: 'Image supprimée' });
+        // Plus d'images, mettre à NULL
+        await db.run('UPDATE products SET image_url = NULL WHERE id = ?', [productId]);
       }
-    });
-  });
+    }
+
+    res.json({ success: true, message: 'Image supprimée' });
+  } catch (error) {
+    console.error('Erreur suppression image:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Réorganiser les images d'un produit
-router.put('/products/:id/reorder-images', requireAdmin, (req, res) => {
+router.put('/products/:id/reorder-images', requireAdmin, async (req, res) => {
   const productId = req.params.id;
   const { images } = req.body; // Array d'objets {id, display_order, is_primary}
 
@@ -397,67 +346,56 @@ router.put('/products/:id/reorder-images', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Données invalides' });
   }
 
-  let updated = 0;
-  let primaryImagePath = null;
+  try {
+    let primaryImagePath = null;
 
-  images.forEach((img, index) => {
-    db.run(
-      'UPDATE product_images SET display_order = ?, is_primary = ? WHERE id = ?',
-      [img.display_order, img.is_primary, img.id],
-      (err) => {
-        if (err) {
-          console.error('Erreur mise à jour image:', err);
-        }
+    for (const img of images) {
+      await db.run(
+        'UPDATE product_images SET display_order = ?, is_primary = ? WHERE id = ?',
+        [img.display_order, img.is_primary, img.id]
+      );
 
-        // Trouver le chemin de l'image principale
-        if (img.is_primary) {
-          db.get('SELECT image_path FROM product_images WHERE id = ?', [img.id], (err, row) => {
-            if (row) {
-              primaryImagePath = row.image_path;
-            }
-          });
-        }
-
-        updated++;
-
-        if (updated === images.length) {
-          // Mettre à jour le produit avec la nouvelle image principale
-          if (primaryImagePath) {
-            db.run('UPDATE products SET image_url = ? WHERE id = ?', [primaryImagePath, productId]);
-          }
-
-          res.json({ success: true, message: 'Images réorganisées' });
+      // Trouver le chemin de l'image principale
+      if (img.is_primary) {
+        const row = await db.get('SELECT image_path FROM product_images WHERE id = ?', [img.id]);
+        if (row) {
+          primaryImagePath = row.image_path;
         }
       }
-    );
-  });
+    }
+
+    // Mettre à jour le produit avec la nouvelle image principale
+    if (primaryImagePath) {
+      await db.run('UPDATE products SET image_url = ? WHERE id = ?', [primaryImagePath, productId]);
+    }
+
+    res.json({ success: true, message: 'Images réorganisées' });
+  } catch (error) {
+    console.error('Erreur réorganisation images:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Statistiques du dashboard
-router.get('/stats', requireAdmin, (req, res) => {
-  const stats = {};
+router.get('/stats', requireAdmin, async (req, res) => {
+  try {
+    const [totalProducts, ongoingOrders, totalRevenue, outOfStock] = await Promise.all([
+      db.get('SELECT COUNT(*) as count FROM products', []),
+      db.get('SELECT COUNT(*) as count FROM orders WHERE status != "delivered"', []),
+      db.get('SELECT SUM(total_amount) as total FROM orders WHERE status = "delivered"', []),
+      db.get('SELECT COUNT(*) as count FROM products WHERE stock = 0', [])
+    ]);
 
-  // Nombre total de produits
-  db.get('SELECT COUNT(*) as count FROM products', [], (err, row) => {
-    stats.totalProducts = row ? row.count : 0;
-
-    // Nombre de commandes en cours (toutes sauf livrées)
-    db.get('SELECT COUNT(*) as count FROM orders WHERE status != "delivered"', [], (err, row) => {
-      stats.ongoingOrders = row ? row.count : 0;
-
-      // Chiffre d'affaires total (uniquement commandes livrées)
-      db.get('SELECT SUM(total_amount) as total FROM orders WHERE status = "delivered"', [], (err, row) => {
-        stats.totalRevenue = row && row.total ? row.total : 0;
-
-        // Produits en rupture de stock
-        db.get('SELECT COUNT(*) as count FROM products WHERE stock = 0', [], (err, row) => {
-          stats.outOfStock = row ? row.count : 0;
-
-          res.json(stats);
-        });
-      });
+    res.json({
+      totalProducts: totalProducts ? totalProducts.count : 0,
+      ongoingOrders: ongoingOrders ? ongoingOrders.count : 0,
+      totalRevenue: totalRevenue && totalRevenue.total ? totalRevenue.total : 0,
+      outOfStock: outOfStock ? outOfStock.count : 0
     });
-  });
+  } catch (error) {
+    console.error('Erreur récupération stats:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

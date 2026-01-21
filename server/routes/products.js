@@ -3,27 +3,23 @@ const router = express.Router();
 const db = require('../models/database');
 
 // Fonction utilitaire pour enrichir un produit avec ses images
-function enrichProduct(product) {
-  return new Promise((resolve, reject) => {
-    db.all(
+async function enrichProduct(product) {
+  try {
+    const images = await db.all(
       `SELECT id, image_path, display_order, is_primary
        FROM product_images
        WHERE product_id = ?
        ORDER BY display_order ASC`,
-      [product.id],
-      (err, images) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        product.images = images || [];
-        product.image_paths = images.map(img => img.image_path);
-
-        resolve(product);
-      }
+      [product.id]
     );
-  });
+
+    product.images = images || [];
+    product.image_paths = images.map(img => img.image_path);
+
+    return product;
+  } catch (err) {
+    throw err;
+  }
 }
 
 // Enrichir plusieurs produits
@@ -60,68 +56,57 @@ router.get('/', async (req, res) => {
 
   query += ' ORDER BY created_at DESC';
 
-  db.all(query, params, async (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-
-    try {
-      const enrichedProducts = await enrichProducts(rows);
-      res.json(enrichedProducts);
-    } catch (error) {
-      console.error('Erreur enrichissement produits:', error);
-      res.json(rows); // Fallback: retourner sans enrichissement
-    }
-  });
+  try {
+    const rows = await db.all(query, params);
+    const enrichedProducts = await enrichProducts(rows);
+    res.json(enrichedProducts);
+  } catch (error) {
+    console.error('Erreur récupération produits:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Récupérer un produit par ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
-  db.get('SELECT * FROM products WHERE id = ?', [id], async (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+  try {
+    const row = await db.get('SELECT * FROM products WHERE id = ?', [id]);
     if (!row) {
       res.status(404).json({ error: 'Produit non trouvé' });
       return;
     }
 
-    try {
-      const enrichedProduct = await enrichProduct(row);
-      res.json(enrichedProduct);
-    } catch (error) {
-      console.error('Erreur enrichissement produit:', error);
-      res.json(row); // Fallback
-    }
-  });
+    const enrichedProduct = await enrichProduct(row);
+    res.json(enrichedProduct);
+  } catch (error) {
+    console.error('Erreur récupération produit:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Récupérer les catégories
-router.get('/meta/categories', (req, res) => {
-  db.all('SELECT DISTINCT category FROM products ORDER BY category', [], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+router.get('/meta/categories', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT DISTINCT category FROM products ORDER BY category', []);
     const categories = rows.map(row => row.category);
     res.json(categories);
-  });
+  } catch (error) {
+    console.error('Erreur récupération catégories:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Récupérer les types de bois
-router.get('/meta/wood-types', (req, res) => {
-  db.all('SELECT DISTINCT wood_type FROM products WHERE wood_type IS NOT NULL AND wood_type != "" ORDER BY wood_type', [], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+router.get('/meta/wood-types', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT DISTINCT wood_type FROM products WHERE wood_type IS NOT NULL AND wood_type != "" ORDER BY wood_type', []);
     const woodTypes = rows.map(row => row.wood_type);
     res.json(woodTypes);
-  });
+  } catch (error) {
+    console.error('Erreur récupération types de bois:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;
