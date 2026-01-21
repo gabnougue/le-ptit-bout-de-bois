@@ -1946,26 +1946,21 @@ function displayBoutiqueImages() {
     noImagesMsg.style.display = 'none';
     if (hint) hint.style.display = 'block';
 
-    grid.innerHTML = boutiqueImages.map((img, index) => {
-        const isUploading = String(img.id).startsWith('temp_');
-        return `
-    <div class="boutique-image-item" data-id="${img.id}" 
+    grid.innerHTML = boutiqueImages.map((img, index) => `
+    <div class="boutique-image-item" data-id="${img.id}" data-order="${img.display_order}"
          style="position: relative; background: white; border-radius: 12px; padding: 0.5rem;
-                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);
-                transition: transform 0.2s ease; ${isUploading ? 'opacity: 0.7;' : ''}">
+                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);">
 
-      ${isUploading ? '<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.5); z-index: 20; font-size: 2rem;">⏳</div>' : ''}
-
-      <!-- Bouton supprimer -->
-      <button onclick="deleteBoutiqueImage('${img.id}')"
-              ${isUploading ? 'disabled' : ''}
-              class="btn-icon-danger"
+      <!-- Bouton supprimer en haut à droite -->
+      <button onclick="deleteBoutiqueImage(${img.id})"
               style="position: absolute; top: 0.75rem; right: 0.75rem; z-index: 10;
                      background: var(--wood-medium); color: white; border: none;
                      width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
                      display: flex; align-items: center; justify-content: center;
-                     font-size: 1.2rem; font-weight: 700; transition: all 0.2s ease;
-                     box-shadow: 0 2px 8px rgba(139, 90, 60, 0.3);">
+                     font-size: 1.2rem; font-weight: 700; transition: all 0.3s ease;
+                     box-shadow: 0 2px 8px rgba(139, 90, 60, 0.3);"
+              onmouseover="this.style.transform='scale(1.1) rotate(90deg)'; this.style.boxShadow='0 4px 12px rgba(139, 90, 60, 0.5)'; this.style.opacity='0.9'"
+              onmouseout="this.style.transform='scale(1) rotate(0deg)'; this.style.boxShadow='0 2px 8px rgba(139, 90, 60, 0.3)'; this.style.opacity='1'">
         ✕
       </button>
 
@@ -1973,194 +1968,208 @@ function displayBoutiqueImages() {
            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;">
 
       <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
-        <button onclick="moveBoutiqueImage('${img.id}', -1)"
+        <button onclick="moveBoutiqueImage(${img.id}, -1)"
                 class="btn btn-secondary"
-                ${index === 0 || isUploading ? 'disabled' : ''}
+                ${index === 0 ? 'disabled' : ''}
                 style="padding: 0.5rem; font-size: 1rem; border-radius: 8px; width: 36px; height: 36px;
                        display: flex; align-items: center; justify-content: center; cursor: pointer;">
           ◀
         </button>
         <div style="display: flex; align-items: center; gap: 0.3rem;">
-          <span style="color: var(--slate-gray); font-size: 0.85rem; white-space: nowrap;">Pos.</span>
+          <span style="color: var(--slate-gray); font-size: 0.85rem; white-space: nowrap;">Position</span>
           <input type="number"
                  value="${index + 1}"
                  min="1"
                  max="${boutiqueImages.length}"
-                 onchange="changeBoutiqueImagePosition('${img.id}', this.value)"
-                 ${isUploading ? 'disabled' : ''}
-                 style="width: 50px; padding: 0.4rem; text-align: center; border: 2px solid var(--wood-medium);
-                        border-radius: 8px; font-size: 0.9rem; font-weight: 600; -moz-appearance: textfield;">
+                 onchange="changeBoutiqueImagePosition(${img.id}, this.value)"
+                 style="width: 45px; padding: 0.4rem; text-align: center; border: 2px solid var(--wood-medium);
+                        border-radius: 8px; font-size: 0.9rem; font-weight: 600; -moz-appearance: textfield;"
+                 onwheel="this.blur()">
         </div>
-        <button onclick="moveBoutiqueImage('${img.id}', 1)"
+        <button onclick="moveBoutiqueImage(${img.id}, 1)"
                 class="btn btn-secondary"
-                ${index === boutiqueImages.length - 1 || isUploading ? 'disabled' : ''}
+                ${index === boutiqueImages.length - 1 ? 'disabled' : ''}
                 style="padding: 0.5rem; font-size: 1rem; border-radius: 8px; width: 36px; height: 36px;
                        display: flex; align-items: center; justify-content: center; cursor: pointer;">
           ▶
         </button>
       </div>
     </div>
-  `;
-    }).join('');
+  `).join('');
 }
 
-// Gérer l'ajout multiple (Optimiste)
-async function handleBoutiqueFiles(input) {
-    const files = Array.from(input.files);
-    if (files.length === 0) return;
+// Ajouter des images de la boutique (Support multiple)
+async function uploadBoutiqueImage() {
+    const input = document.getElementById('boutique-image-input');
+    const files = input.files;
 
-    for (const file of files) {
-        const tempId = 'temp_' + Date.now() + Math.random().toString(36).substr(2, 5);
-        const tempImage = {
-            id: tempId,
-            image_path: URL.createObjectURL(file),
-            display_order: boutiqueImages.length + 1,
-            isUploading: true
-        };
-        boutiqueImages.push(tempImage);
-        displayBoutiqueImages();
+    if (!files || files.length === 0) return;
 
-        // Upload sans await pour ne pas bloquer la boucle d'affichage
-        uploadSingleBoutiqueImage(file, tempId);
-    }
-    input.value = '';
-}
+    showNotification('Envoi des images en cours...', 'info');
 
-// Upload individuel
-async function uploadSingleBoutiqueImage(file, tempId) {
-    const formData = new FormData();
-    formData.append('image', file);
-    try {
-        const response = await fetch('/api/boutique/images', { method: 'POST', body: formData });
+    const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('image', file);
 
-        if (!response.ok) {
-            let errorMsg = `Erreur ${response.status}`;
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMsg = errorData.error;
-            } catch (jsonErr) {
-                // Si ce n'est pas du JSON, essayer le texte
-                try {
-                    const text = await response.text();
-                    if (text) errorMsg = text.substring(0, 50); // Limiter la longueur
-                } catch (textErr) { }
+        try {
+            const response = await fetch('/api/boutique/images', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de l\'upload');
             }
-            throw new Error(errorMsg);
+
+            return await response.json();
+        } catch (error) {
+            console.error('Erreur upload image:', error);
+            return null;
         }
+    });
 
-        const newImage = await response.json();
+    try {
+        const results = await Promise.all(uploadPromises);
+        const newImages = results.filter(img => img !== null);
 
-        const idx = boutiqueImages.findIndex(i => i.id === tempId);
-        if (idx !== -1) {
-            boutiqueImages[idx] = newImage; // Remplace temp par réel
+        if (newImages.length > 0) {
+            boutiqueImages.push(...newImages);
             displayBoutiqueImages();
-            showNotification('Image ajoutée', 'success');
+            showNotification(`${newImages.length} image(s) ajoutée(s) avec succès !`, 'success');
         } else {
-            // Si l'image temporaire a été supprimée ou perdue, on ajoute la nouvelle à la fin
-            boutiqueImages.push(newImage);
-            displayBoutiqueImages();
+            showNotification('Erreur lors de l\'ajout des images', 'error');
         }
-    } catch (e) {
-        console.error('Error uploading boutique image:', e);
-        // Supprime l'image temporaire car l'upload a échoué
-        boutiqueImages = boutiqueImages.filter(i => i.id !== tempId);
-        displayBoutiqueImages();
-        showNotification(`Echec upload: ${e.message}`, 'error');
+
+        input.value = '';
+    } catch (error) {
+        console.error('Erreur globale upload:', error);
+        showNotification('Erreur inattendue', 'error');
     }
 }
 
-// Supprimer (Optimiste)
+// Supprimer une image de la boutique
 async function deleteBoutiqueImage(id) {
-    if (!confirm('Supprimer cette image ?')) return;
-
-    // 1. Sauvegarder l'état actuel pour rollback
-    const previousImages = [...boutiqueImages];
-
-    // 2. Mise à jour optimiste
-    boutiqueImages = boutiqueImages.filter(img => String(img.id) !== String(id));
-    displayBoutiqueImages();
-
-    // 3. Appel API
-    try {
-        const response = await fetch(`/api/boutique/images/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error();
-        showNotification('Image supprimée', 'success');
-    } catch (e) {
-        // Rollback
-        boutiqueImages = previousImages;
-        displayBoutiqueImages();
-        showNotification('Erreur suppression', 'error');
-    }
-}
-
-// Déplacer (Optimiste, instantané)
-async function moveBoutiqueImage(id, direction) {
-    const index = boutiqueImages.findIndex(img => String(img.id) === String(id));
-    if (index === -1) return;
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= boutiqueImages.length) return;
-
-    // 1. Swap local
-    [boutiqueImages[index], boutiqueImages[newIndex]] = [boutiqueImages[newIndex], boutiqueImages[index]];
-
-    // 2. Update UI INSTANTANÉMENT
-    displayBoutiqueImages();
-
-    // 3. Update Server (silent)
-    const updatedImages = boutiqueImages.map((img, idx) => ({
-        id: img.id,
-        display_order: idx + 1
-    }));
-
-    try {
-        await fetch('/api/boutique/images/reorder', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ images: updatedImages })
-        });
-    } catch (e) {
-        console.error('Erreur reorder', e);
-        // On pourrait rollback, mais pour le reorder l'utilisateur peut juste recliquer
-    }
-}
-
-// Changer directement la position (Optimiste)
-async function changeBoutiqueImagePosition(id, newPosition) {
-    const newPos = parseInt(newPosition);
-
-    // Validation
-    if (isNaN(newPos) || newPos < 1 || newPos > boutiqueImages.length) {
-        displayBoutiqueImages(); // Réafficher pour rétablir la valeur visuelle correcte
+    if (!confirm('Voulez-vous vraiment supprimer cette image ?')) {
         return;
     }
 
-    const currentIndex = boutiqueImages.findIndex(img => String(img.id) === String(id));
-    if (currentIndex === -1) return;
-
-    // Si c'est déjà la bonne position
-    if (currentIndex + 1 === newPos) return;
-
-    // 1. Déplacer l'élément localement
-    const [movedImage] = boutiqueImages.splice(currentIndex, 1);
-    boutiqueImages.splice(newPos - 1, 0, movedImage);
-
-    // 2. Update UI INSTANTANÉMENT
+    // Optimistic UI : Mise à jour immédiate
+    const previousImages = [...boutiqueImages];
+    boutiqueImages = boutiqueImages.filter(img => img.id !== id);
     displayBoutiqueImages();
 
-    // 3. Update Server
-    const updatedImages = boutiqueImages.map((img, idx) => ({
+    try {
+        const response = await fetch(`/api/boutique/images/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('Erreur lors de la suppression');
+        }
+
+        showNotification('Image supprimée avec succès !', 'success');
+    } catch (error) {
+        console.error('Erreur suppression image:', error);
+        // Rollback en cas d'erreur
+        boutiqueImages = previousImages;
+        displayBoutiqueImages();
+        showNotification('Erreur lors de la suppression', 'error');
+    }
+}
+
+// Déplacer une image de la boutique
+async function moveBoutiqueImage(id, direction) {
+    const index = boutiqueImages.findIndex(img => img.id === id);
+    if (index === -1) return;
+
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= boutiqueImages.length) return;
+
+    // Backup pour rollback
+    const previousImages = JSON.parse(JSON.stringify(boutiqueImages));
+
+    // Échanger les positions
+    [boutiqueImages[index], boutiqueImages[newIndex]] = [boutiqueImages[newIndex], boutiqueImages[index]];
+
+    // Mettre à jour les display_order locaux
+    boutiqueImages.forEach((img, idx) => {
+        img.display_order = idx + 1;
+    });
+
+    // Optimistic UI : Mise à jour immédiate
+    displayBoutiqueImages();
+
+    // Préparer données API
+    const updatedImages = boutiqueImages.map(img => ({
         id: img.id,
-        display_order: idx + 1
+        display_order: img.display_order
     }));
 
     try {
-        await fetch('/api/boutique/images/reorder', {
+        const response = await fetch('/api/boutique/images/reorder', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ images: updatedImages })
         });
-    } catch (e) {
-        console.error('Erreur reorder', e);
-        loadBoutiqueImages(); // Rollback en rechargeant
+
+        if (!response.ok) throw new Error('Erreur lors de la réorganisation');
+
+    } catch (error) {
+        console.error('Erreur réorganisation:', error);
+        showNotification('Erreur de synchronisation', 'error');
+        // Rollback par rechargement complet pour être sûr
+        loadBoutiqueImages();
+    }
+}
+
+// Changer directement la position d'une image de boutique
+async function changeBoutiqueImagePosition(id, newPosition) {
+    const newPos = parseInt(newPosition);
+
+    if (isNaN(newPos) || newPos < 1 || newPos > boutiqueImages.length) {
+        showNotification('Position invalide', 'error');
+        displayBoutiqueImages();
+        return;
+    }
+
+    const currentIndex = boutiqueImages.findIndex(img => img.id === id);
+    if (currentIndex === -1) return;
+    if (currentIndex + 1 === newPos) return;
+
+    // Backup
+    const previousImages = JSON.parse(JSON.stringify(boutiqueImages));
+
+    // Déplacer
+    const [movedImage] = boutiqueImages.splice(currentIndex, 1);
+    boutiqueImages.splice(newPos - 1, 0, movedImage);
+
+    // Mettre à jour les display_order locaux
+    boutiqueImages.forEach((img, idx) => {
+        img.display_order = idx + 1;
+    });
+
+    // Optimistic UI : Mise à jour immédiate
+    displayBoutiqueImages();
+    showNotification('Position mise à jour', 'success');
+
+    // API
+    const updatedImages = boutiqueImages.map(img => ({
+        id: img.id,
+        display_order: img.display_order
+    }));
+
+    try {
+        const response = await fetch('/api/boutique/images/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ images: updatedImages })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la réorganisation');
+
+    } catch (error) {
+        console.error('Erreur réorganisation:', error);
+        showNotification('Erreur de synchronisation', 'error');
+        loadBoutiqueImages();
     }
 }

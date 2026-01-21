@@ -193,12 +193,13 @@
           </p>
 
           <!-- Upload nouvelle image -->
+          <!-- Upload nouvelle image -->
           <div style="margin-bottom: 2rem; display: flex; justify-content: flex-end;">
             <input type="file" id="boutique-image-input" accept="image/*" multiple style="display: none;"
-              onchange="handleBoutiqueFiles(this)">
+              onchange="uploadBoutiqueImage()">
             <button onclick="document.getElementById('boutique-image-input').click()" class="btn btn-primary"
-              style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-              ➕ Ajouter des photos
+              style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+              + Ajouter des photos
             </button>
           </div>
 
