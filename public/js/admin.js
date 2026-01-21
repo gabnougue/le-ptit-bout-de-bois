@@ -13,58 +13,53 @@ let existingImages = []; // Images déjà enregistrées
 let newImageFiles = []; // Nouveaux fichiers sélectionnés
 let imagesToDelete = []; // IDs des images à supprimer (appliqué à la sauvegarde)
 
-// Injection des styles pour les skeletons et loaders
-const adminStyles = document.createElement('style');
-adminStyles.innerHTML = `
-@keyframes skeletonPulse { 0% { opacity: 0.6; } 50% { opacity: 0.8; } 100% { opacity: 0.6; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.skeleton-loading {
-  color: transparent !important;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeletonPulse 1.5s infinite;
-  border-radius: 4px;
-  pointer-events: none;
-  user-select: none;
-}
-.skeleton-loading::placeholder { color: transparent; }
-
-.btn-loading {
-  position: relative;
-  pointer-events: none;
-  opacity: 0.8;
-}
-.btn-loading span { opacity: 0; }
-.btn-loading::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin-top: -10px;
-  margin-left: -10px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top: 3px solid white;
-  animation: spin 1s linear infinite;
-}
-
-/* Skeleton Thread View */
-.thread-skeleton-header { width: 60%; height: 30px; margin-bottom: 10px; }
-.thread-skeleton-sub { width: 40%; height: 20px; }
-.thread-skeleton-msg { 
-    margin-bottom: 20px; 
-    border-radius: 15px; 
-    padding: 1rem;
-    height: 80px;
-    width: 70%;
-}
-.thread-skeleton-msg.left { float: left; clear: both; background: white; }
-.thread-skeleton-msg.right { float: right; clear: both; background: var(--wood-dark); opacity: 0.3; }
-`;
-document.head.appendChild(adminStyles);
+// Injection des styles pour les skeletons et loaders (Sécurisé)
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const adminStyles = document.createElement('style');
+        adminStyles.innerHTML = `
+        @keyframes skeletonPulse { 0% { opacity: 0.6; } 50% { opacity: 0.8; } 100% { opacity: 0.6; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .skeleton-loading {
+          color: transparent !important;
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: skeletonPulse 1.5s infinite;
+          border-radius: 4px;
+          pointer-events: none;
+        }
+        .skeleton-loading::placeholder { color: transparent; }
+        
+        .btn-loading {
+          position: relative;
+          pointer-events: none;
+          opacity: 0.8;
+        }
+        .btn-loading span { opacity: 0; }
+        .btn-loading::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 20px; height: 20px;
+          margin-top: -10px; margin-left: -10px;
+          border: 3px solid rgba(255,255,255,0.3);
+          border-radius: 50%;
+          border-top: 3px solid white;
+          animation: spin 1s linear infinite;
+        }
+        .thread-skeleton-header { width: 60%; height: 30px; margin-bottom: 10px; }
+        .thread-skeleton-sub { width: 40%; height: 20px; }
+        .thread-skeleton-msg { margin-bottom: 20px; border-radius: 15px; padding: 1rem; height: 80px; width: 70%; }
+        .thread-skeleton-msg.left { float: left; clear: both; background: white; }
+        .thread-skeleton-msg.right { float: right; clear: both; background: var(--wood-dark); opacity: 0.3; }
+        `;
+        document.head.appendChild(adminStyles);
+    } catch (e) {
+        console.warn('Impossible d\'injecter les styles admin', e);
+    }
+});
 
 // Variable globale pour garder l'ordre mixte des images
 if (typeof window.allImagesOrderBoutDeBois === 'undefined') {
@@ -238,64 +233,72 @@ function showAddProductModal() {
 
 // Modifier un produit
 async function editProduct(productId) {
-    // 1. Afficher immédiatement le modal en mode "skeleton"
-    currentEditingProduct = allProducts.find(p => p.id === productId);
+    const modal = document.getElementById('product-modal');
+    if (!modal) return;
 
-    document.getElementById('modal-title').textContent = 'Modifier le produit';
+    // 1. Afficher immédiatement
+    modal.classList.add('active');
+    const titleEl = document.getElementById('modal-title');
+    if (titleEl) titleEl.textContent = 'Modifier le produit';
 
-    // Si on a les données de base dans allProducts, on peut pré-remplir partiellement
-    if (currentEditingProduct) {
-        document.getElementById('product-name').value = currentEditingProduct.name;
-        // Mais on va quand même mettre l'état skeleton pour charger les images et détails complets
+    // 2. Mode Skeleton
+    const form = document.getElementById('product-form');
+    let inputs = [];
+    // Vérifier form avant d'utiliser querySelectorAll
+    if (form) {
+        inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => input.classList.add('skeleton-loading'));
     }
 
-    const modal = document.getElementById('product-modal');
-    const form = document.getElementById('product-form');
-
-    // Ajouter classes skeleton aux inputs
-    const inputs = form.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => input.classList.add('skeleton-loading'));
-
-    modal.classList.add('active');
-
-    // Réinitialiser l'input file et images
+    // Réinitialiser images
     newImageFiles = [];
     imagesToDelete = [];
     window.allImagesOrderBoutDeBois = [];
     const imageInput = document.getElementById('product-images');
     if (imageInput) imageInput.value = '';
 
-    document.getElementById('existing-images-container').style.display = 'none';
-    document.getElementById('new-images-preview').style.display = 'none';
+    const existingContainer = document.getElementById('existing-images-container');
+    if (existingContainer) existingContainer.style.display = 'none';
+    const newContainer = document.getElementById('new-images-preview');
+    if (newContainer) newContainer.style.display = 'none';
 
-    // 2. Charger les données complètes
+    // 3. Charger les données complètes
     try {
         const response = await fetch(`/api/products/${productId}`);
-        const product = await response.json();
+        if (!response.ok) throw new Error('Erreur fetch');
 
-        currentEditingProduct = product; // Mise à jour avec détails complets
+        const product = await response.json();
+        currentEditingProduct = product;
 
         // Remplir les champs
-        document.getElementById('product-id').value = product.id;
-        document.getElementById('product-name').value = product.name;
-        document.getElementById('product-category').value = product.category;
-        document.getElementById('product-wood').value = product.wood_type;
-        document.getElementById('product-price').value = product.price;
-        document.getElementById('product-stock').value = product.stock;
-        document.getElementById('product-description').value = product.description || '';
-        document.getElementById('product-perlouze-link').value = product.perlouze_link || '';
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val !== undefined ? val : '';
+        };
+
+        setVal('product-id', product.id);
+        setVal('product-name', product.name);
+        setVal('product-category', product.category);
+        setVal('product-wood', product.wood_type);
+        setVal('product-price', product.price);
+        setVal('product-stock', product.stock);
+        setVal('product-description', product.description || '');
+        setVal('product-perlouze-link', product.perlouze_link || '');
 
         existingImages = (product.images || []).sort((a, b) => a.display_order - b.display_order);
 
-        // 3. Retirer skeleton et afficher images
-        inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        // 4. Retirer Skeleton et afficher images
+        if (inputs.length > 0) {
+            inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        }
         displayExistingImages();
 
     } catch (error) {
-        console.error('Erreur chargement produit:', error);
-        inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        console.error('Erreur editProduct:', error);
+        if (inputs.length > 0) {
+            inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        }
         showError('Impossible de charger les détails du produit');
-        closeProductModal();
     }
 }
 
