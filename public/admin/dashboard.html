@@ -313,155 +313,77 @@
         <button class="modal-close" onclick="closeProductModal()">×</button>
       </div>
 
-      <!-- Skeleton loader (caché par défaut) -->
-      <div id="product-modal-skeleton" style="display: none; padding: 1rem 0;">
-        <div style="margin-bottom: 2rem;">
-          <div
-            style="width: 30%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-          </div>
-          <div
-            style="width: 100%; height: 40px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-          </div>
+      <form id="product-form" class="product-form" onsubmit="saveProduct(event)">
+        <input type="hidden" id="product-id">
+
+        <div class="form-group">
+          <label>Nom du produit *</label>
+          <input type="text" id="product-name" required>
         </div>
-        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-          <div style="flex: 1;">
-            <div
-              style="width: 40%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-            </div>
-            <div
-              style="width: 100%; height: 40px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <div
-              style="width: 40%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-            </div>
-            <div
-              style="width: 100%; height: 40px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-            </div>
-          </div>
+
+        <div class="form-group">
+          <label>Catégorie *</label>
+          <select id="product-category" required>
+            <option value="Jeux">Jeux</option>
+            <option value="Accessoires">Accessoires</option>
+            <option value="Bijoux bois & pierres">Bijoux bois & pierres</option>
+            <option value="Objets décoratifs">Objets décoratifs</option>
+          </select>
         </div>
-        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-          <div style="flex: 1;">
-            <div
-              style="width: 40%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-            </div>
-            <div
-              style="width: 100%; height: 40px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <div
-              style="width: 40%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-            </div>
-            <div
-              style="width: 100%; height: 40px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-            </div>
-          </div>
+
+        <div class="form-group">
+          <label>Type de bois *</label>
+          <select id="product-wood" required>
+            <option value="">-- Sélectionner --</option>
+          </select>
         </div>
-        <div style="margin-bottom: 2rem;">
-          <div
-            style="width: 25%; height: 20px; background: #e0e0e0; border-radius: 4px; margin-bottom: 0.5rem; animation: skeletonPulse 1.5s infinite;">
-          </div>
-          <div
-            style="width: 100%; height: 100px; background: #f0f0f0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-          </div>
+
+        <div class="form-group">
+          <label>Prix (€) *</label>
+          <input type="number" id="product-price" step="0.01" min="0" required>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-          <div
-            style="width: 100px; height: 40px; background: #e0e0e0; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-          </div>
-          <div
-            style="width: 120px; height: 40px; background: var(--wood-medium); opacity: 0.3; border-radius: 8px; animation: skeletonPulse 1.5s infinite;">
-          </div>
+
+        <div class="form-group">
+          <label>Stock *</label>
+          <input type="number" id="product-stock" min="0" required>
         </div>
-      </div>
 
-      <style>
-        @keyframes skeletonPulse {
-          0% {
-            opacity: 0.6;
-          }
+        <div class="form-group full-width">
+          <label>Images (jusqu'à 10)</label>
+          <input type="file" id="product-images" accept="image/*" multiple>
+          <small style="color: #6B7280; display: block; margin-top: 0.5rem;">
+            Vous pouvez sélectionner plusieurs images (maintenez Ctrl ou Cmd)
+          </small>
+        </div>
 
-          50% {
-            opacity: 1;
-          }
+        <div id="existing-images-container" style="display: none;" class="form-group full-width">
+          <label>Images existantes</label>
+          <div id="existing-images" class="images-grid"></div>
+        </div>
 
-          100% {
-            opacity: 0.6;
-          }
-        }
-      </style>
-      <input type="hidden" id="product-id">
+        <div id="new-images-preview" style="display: none;" class="form-group full-width">
+          <label>Nouvelles images</label>
+          <div id="new-images-container" class="images-grid"></div>
+        </div>
 
-      <div class="form-group">
-        <label>Nom du produit *</label>
-        <input type="text" id="product-name" required>
-      </div>
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea id="product-description" rows="4"></textarea>
+        </div>
 
-      <div class="form-group">
-        <label>Catégorie *</label>
-        <select id="product-category" required>
-          <option value="Jeux">Jeux</option>
-          <option value="Accessoires">Accessoires</option>
-          <option value="Bijoux bois & pierres">Bijoux bois & pierres</option>
-          <option value="Objets décoratifs">Objets décoratifs</option>
-        </select>
-      </div>
+        <div class="form-group full-width">
+          <label>Lien vers La p'tite perlouze (optionnel)</label>
+          <input type="url" id="product-perlouze-link" placeholder="http://localhost:3000/produit/1">
+          <small style="color: var(--wood-medium); display: block; margin-top: 0.5rem;">
+            💡 <strong>Astuce :</strong> Si cette création en bois a un bijou assorti sur La p'tite perlouze, ajoutez le
+            lien ici pour créer une passerelle entre les deux boutiques
+          </small>
+        </div>
 
-      <div class="form-group">
-        <label>Type de bois *</label>
-        <select id="product-wood" required>
-          <option value="">-- Sélectionner --</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Prix (€) *</label>
-        <input type="number" id="product-price" step="0.01" min="0" required>
-      </div>
-
-      <div class="form-group">
-        <label>Stock *</label>
-        <input type="number" id="product-stock" min="0" required>
-      </div>
-
-      <div class="form-group full-width">
-        <label>Images (jusqu'à 10)</label>
-        <input type="file" id="product-images" accept="image/*" multiple>
-        <small style="color: #6B7280; display: block; margin-top: 0.5rem;">
-          Vous pouvez sélectionner plusieurs images (maintenez Ctrl ou Cmd)
-        </small>
-      </div>
-
-      <div id="existing-images-container" style="display: none;" class="form-group full-width">
-        <label>Images existantes</label>
-        <div id="existing-images" class="images-grid"></div>
-      </div>
-
-      <div id="new-images-preview" style="display: none;" class="form-group full-width">
-        <label>Nouvelles images</label>
-        <div id="new-images-container" class="images-grid"></div>
-      </div>
-
-      <div class="form-group full-width">
-        <label>Description</label>
-        <textarea id="product-description" rows="4"></textarea>
-      </div>
-
-      <div class="form-group full-width">
-        <label>Lien vers La p'tite perlouze (optionnel)</label>
-        <input type="url" id="product-perlouze-link" placeholder="http://localhost:3000/produit/1">
-        <small style="color: var(--wood-medium); display: block; margin-top: 0.5rem;">
-          💡 <strong>Astuce :</strong> Si cette création en bois a un bijou assorti sur La p'tite perlouze, ajoutez le
-          lien ici pour créer une passerelle entre les deux boutiques
-        </small>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" onclick="closeProductModal()" class="btn btn-secondary">Annuler</button>
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
-      </div>
+        <div class="form-actions">
+          <button type="button" onclick="closeProductModal()" class="btn btn-secondary">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
       </form>
     </div>
   </div>

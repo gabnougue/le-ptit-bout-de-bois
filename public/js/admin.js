@@ -189,41 +189,7 @@ async function editProduct(productId) {
 
     if (!currentEditingProduct) return;
 
-    // 1. Ouvrir le modal immédiatement
-    document.getElementById('modal-title').textContent = 'Modifier le produit';
-    document.getElementById('product-id').value = currentEditingProduct.id;
-    document.getElementById('product-name').value = currentEditingProduct.name;
-    document.getElementById('product-category').value = currentEditingProduct.category;
-    document.getElementById('product-wood').value = currentEditingProduct.wood_type;
-    document.getElementById('product-price').value = currentEditingProduct.price;
-    document.getElementById('product-stock').value = currentEditingProduct.stock;
-    document.getElementById('product-description').value = currentEditingProduct.description || '';
-    document.getElementById('product-perlouze-link').value = currentEditingProduct.perlouze_link || '';
-
-    // Réinitialiser l'input file
-    const imageInput = document.getElementById('product-images');
-    if (imageInput) imageInput.value = '';
-
-    // Cacher l'aperçu des nouvelles images
-    document.getElementById('new-images-preview').style.display = 'none';
-
-    // Afficher un skeleton/loader pour les images existantes
-    const existingContainerDiv = document.getElementById('existing-images-container');
-    const existingContainer = document.getElementById('existing-images');
-    existingContainerDiv.style.display = 'block';
-
-    existingContainer.innerHTML = `
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite;"></div>
-            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite 0.2s;"></div>
-            <div style="width: 120px; height: 120px; background: var(--wood-light); border-radius: 10px; animation: pulse 1.5s infinite 0.4s;"></div>
-        </div>
-        <style>@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }</style>
-    `;
-
-    document.getElementById('product-modal').classList.add('active');
-
-    // 2. Charger les images du produit en arrière-plan
+    // Charger les images du produit
     try {
         const response = await fetch(`/api/products/${productId}`);
         const product = await response.json();
@@ -237,8 +203,29 @@ async function editProduct(productId) {
     imagesToDelete = [];
     window.allImagesOrderBoutDeBois = [];
 
-    // 3. Afficher les images réelles une fois chargées
+    document.getElementById('modal-title').textContent = 'Modifier le produit';
+    document.getElementById('product-id').value = currentEditingProduct.id;
+    document.getElementById('product-name').value = currentEditingProduct.name;
+    document.getElementById('product-category').value = currentEditingProduct.category;
+    document.getElementById('product-wood').value = currentEditingProduct.wood_type;
+    document.getElementById('product-price').value = currentEditingProduct.price;
+    document.getElementById('product-stock').value = currentEditingProduct.stock;
+    document.getElementById('product-description').value = currentEditingProduct.description || '';
+    document.getElementById('product-perlouze-link').value = currentEditingProduct.perlouze_link || '';
+
+    // Réinitialiser l'input file
+    const imageInput = document.getElementById('product-images');
+    if (imageInput) {
+        imageInput.value = '';
+    }
+
+    // Afficher les images existantes
     displayExistingImages();
+
+    // Cacher l'aperçu des nouvelles images
+    document.getElementById('new-images-preview').style.display = 'none';
+
+    document.getElementById('product-modal').classList.add('active');
 }
 
 // Fermer le modal
