@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,16 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
   <script src="https://js.stripe.com/v3/"></script>
   <style>
     .hidden {
       display: none !important;
     }
+
     .spinner {
       border: 3px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
@@ -23,12 +27,19 @@
       animation: spin 1s linear infinite;
       display: inline-block;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header>
@@ -47,7 +58,10 @@
       <li><a href="/catalogue">Catalogue</a></li>
       <li><a href="/panier">Panier <span id="cart-count">(0)</span></a></li>
       <li><a href="/contact">Contact</a></li>
-      <li><a href="/boutique" style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
+      <li><a href="/boutique"
+          style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
     </ul>
   </nav>
 
@@ -58,7 +72,8 @@
     </h1>
 
     <!-- Section Panier -->
-    <div id="cart-section" style="display: grid; grid-template-columns: 1fr; lg:grid-template-columns: 2fr 1fr; gap: 2rem;">
+    <div id="cart-section"
+      style="display: grid; grid-template-columns: 1fr; lg:grid-template-columns: 2fr 1fr; gap: 2rem;">
       <!-- Liste des articles -->
       <div>
         <div id="cart-items" style="background: white; border-radius: 12px; padding: 2rem;
@@ -87,30 +102,30 @@
                   border: 3px solid var(--wood-light); max-width: 800px; margin: 0 auto;">
         <form id="checkout-form">
           <div class="form-group">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Nom complet *</label>
-            <input type="text" id="customer-name" name="customerName" required
-                   style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Nom complet
+              *</label>
+            <input type="text" id="customer-name" name="customerName" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
                           border-radius: 8px; background: var(--cream); font-family: inherit;">
           </div>
 
           <div class="form-group">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Email *</label>
-            <input type="email" id="customer-email" name="customerEmail" required
-                   style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Email
+              *</label>
+            <input type="email" id="customer-email" name="customerEmail" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
                           border-radius: 8px; background: var(--cream); font-family: inherit;">
           </div>
 
           <div class="form-group">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Téléphone</label>
-            <input type="tel" id="customer-phone" name="customerPhone"
-                   style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
+            <label
+              style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Téléphone</label>
+            <input type="tel" id="customer-phone" name="customerPhone" style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
                           border-radius: 8px; background: var(--cream); font-family: inherit;">
           </div>
 
           <div class="form-group">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Adresse de livraison *</label>
-            <textarea id="customer-address" name="customerAddress" rows="4" required
-                      style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Adresse de
+              livraison *</label>
+            <textarea id="customer-address" name="customerAddress" rows="4" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
                              border-radius: 8px; background: var(--cream); font-family: inherit;"></textarea>
           </div>
 
@@ -127,15 +142,18 @@
             <div id="payment-element" style="margin-bottom: 1.5rem;">
               <!-- L'interface de paiement Stripe sera chargée ici -->
             </div>
-            <div id="payment-message" class="hidden" style="color: #df1b41; margin-top: 1rem; padding: 1rem; background: #fef2f2; border-radius: 8px;"></div>
+            <div id="payment-message" class="hidden"
+              style="color: #df1b41; margin-top: 1rem; padding: 1rem; background: #fef2f2; border-radius: 8px;"></div>
           </div>
 
-          <button type="submit" id="submit-button" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+          <button type="submit" id="submit-button" class="btn btn-primary"
+            style="width: 100%; padding: 1rem; font-size: 1.1rem;">
             <span id="button-text">💳 Payer et valider la commande</span>
             <div id="spinner" class="spinner hidden"></div>
           </button>
 
-          <button type="button" class="btn btn-secondary" onclick="cancelCheckout()" style="width: 100%; margin-top: 1rem; padding: 0.75rem;">
+          <button type="button" class="btn btn-secondary" onclick="cancelCheckout()"
+            style="width: 100%; margin-top: 1rem; padding: 0.75rem;">
             ← Retour au panier
           </button>
         </form>
@@ -148,7 +166,6 @@
     <p><strong>le p'tit bout de bois</strong> - Créations artisanales par Jean-Michel Nougué-Lecocq</p>
     <p>
       <a href="/contact">Contact</a> |
-      |
       <a href="http://localhost:3000">La p'tite perlouze</a>
     </p>
     <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
@@ -177,4 +194,5 @@
     createWoodChips();
   </script>
 </body>
+
 </html>
