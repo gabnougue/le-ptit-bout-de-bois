@@ -13,9 +13,12 @@ class Cart {
     const existingItem = this.items.find(item => item.id === product.id);
 
     // Déterminer l'image à utiliser (priorité au tableau images)
-    let imageUrl = product.image_url || '/images/placeholder.jpg';
+    let imageUrl = '/images/placeholder.jpg';
     if (product.images && product.images.length > 0) {
-      imageUrl = product.images[0].image_path;
+      const imgPath = product.images[0].image_path;
+      imageUrl = imgPath.startsWith('https://') ? imgPath : `/images/uploads/${imgPath}`;
+    } else if (product.image_url) {
+      imageUrl = product.image_url.startsWith('https://') ? product.image_url : `/images/uploads/${product.image_url}`;
     }
 
     if (existingItem) {

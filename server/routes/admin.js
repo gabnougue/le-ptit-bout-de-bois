@@ -417,4 +417,109 @@ router.get('/stats', requireAdmin, async (req, res) => {
   }
 });
 
+// Upload en masse des images locales vers Vercel Blob
+// Endpoint temporaire pour la migration des images
+const fs = require('fs');
+
+router.post('/bulk-upload-local-images', requireAdmin, async (req, res) => {
+  const imagesDir = path.join(__dirname, '../../public/images/products');
+
+  try {
+    // Vérifier que le dossier existe
+    if (!fs.existsSync(imagesDir)) {
+      return res.status(400).json({ error: 'Dossier images/products non trouvé' });
+    }
+
+    // Lister les images
+    const imageFiles = fs.readdirSync(imagesDir)
+      .filter(file => /\.(jpg|jpeg|png|webp|gif)$/i.test(file) && file !== '.gitkeep')
+      .sort();
+
+    if (imageFiles.length === 0) {
+      return res.status(400).json({ error: 'Aucune image trouvée dans le dossier' });
+    }
+
+    // Récupérer tous les produits
+    const products = await db.all('SELECT * FROM products ORDER BY id');
+
+    if (products.length === 0) {
+      return res.status(400).json({ error: 'Aucun produit dans la base de données' });
+    }
+
+    console.log(`🖼️  ${imageFiles.length} images à uploader pour ${products.length} produits`);
+
+    // Nettoyer les anciennes associations
+    await db.run('DELETE FROM product_images');
+    await db.run('UPDATE products SET image_url = NULL');
+
+    // Distribuer les images aux produits
+    const imagesPerProduct = Math.ceil(imageFiles.length / products.length);
+    let imageIndex = 0;
+    const results = [];
+
+    for (const product of products) {
+      const productImages = [];
+
+      for (let i = 0; i < imagesPerProduct && imageIndex < imageFiles.length; i++) {
+        productImages.push(imageFiles[imageIndex]);
+        imageIndex++;
+      }
+
+      if (productImages.length === 0) continue;
+
+      for (let order = 0; order < productImages.length; order++) {
+        const imageName = productImages[order];
+        const imagePath = path.join(imagesDir, imageName);
+        const isPrimary = order === 0;
+
+        try {
+          // Lire et compresser l'image
+          const fileBuffer = fs.readFileSync(imagePath);
+          const blobUrl = await processAndSaveImage(fileBuffer, imageName);
+
+          // Insérer dans product_images
+          await db.run(`
+            INSERT INTO product_images (product_id, image_path, display_order, is_primary)
+            VALUES (?, ?, ?, ?)
+          `, [product.id, blobUrl, order + 1, isPrimary ? 1 : 0]);
+
+          // Mettre à jour image_url si primaire
+          if (isPrimary) {
+            await db.run('UPDATE products SET image_url = ? WHERE id = ?', [blobUrl, product.id]);
+          }
+
+          results.push({
+            productId: product.id,
+            productName: product.name,
+            imageName,
+            blobUrl,
+            isPrimary
+          });
+
+          console.log(`  ✅ ${imageName} → ${product.name}`);
+        } catch (err) {
+          console.error(`  ❌ Erreur ${imageName}:`, err.message);
+          results.push({
+            productId: product.id,
+            imageName,
+            error: err.message
+          });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `${results.filter(r => r.blobUrl).length} images uploadées avec succès`,
+      totalImages: imageFiles.length,
+      totalProducts: products.length,
+      results
+    });
+
+  } catch (error) {
+    console.error('Erreur bulk upload:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

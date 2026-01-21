@@ -237,9 +237,15 @@ function displayProducts() {
   // Générer les cartes produits
   container.innerHTML = filteredProducts.map(product => {
     // Utiliser la première image du tableau images, ou image_url en fallback
-    const imageUrl = (product.images && product.images.length > 0)
-      ? product.images[0].image_path
-      : (product.image_url || '/images/placeholder.jpg');
+    let imageUrl;
+    if (product.images && product.images.length > 0) {
+      const imgPath = product.images[0].image_path;
+      imageUrl = imgPath.startsWith('https://') ? imgPath : `/images/uploads/${imgPath}`;
+    } else if (product.image_url) {
+      imageUrl = product.image_url.startsWith('https://') ? product.image_url : `/images/uploads/${product.image_url}`;
+    } else {
+      imageUrl = '/images/placeholder.jpg';
+    }
 
     return `
     <div class="product-card">
@@ -247,7 +253,12 @@ function displayProducts() {
            alt="${product.name}"
            class="product-image"
            onclick="window.location.href='/produit/${product.id}'"
-           style="cursor: pointer;">
+           style="cursor: pointer; filter: blur(20px); transform: scale(1.1); transition: filter 0.5s ease-out, transform 0.5s ease-out; background: linear-gradient(135deg, var(--wood-light), var(--cream));"
+           loading="lazy" decoding="async"
+           onload="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+           onerror="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+           onmouseover="if(this.style.filter==='blur(0px)' || this.style.filter==='blur(0)') this.style.transform='scale(1.05)'"
+           onmouseout="this.style.transform='scale(1)'">
 
       <div class="product-info">
         <span class="product-category">${product.category}</span>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,12 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Raleway:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
   <!-- Header -->
   <header>
@@ -28,7 +32,10 @@
       <li><a href="/catalogue">Catalogue</a></li>
       <li><a href="/panier">Panier <span id="cart-count">(0)</span></a></li>
       <li><a href="/contact">Contact</a></li>
-      <li><a href="/boutique" style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
+      <li><a href="/boutique"
+          style="background: linear-gradient(135deg, #8B4513, #A0522D); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 2px solid #D2691E;"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(139, 69, 19, 0.5)'"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">🏡 La Boutique</a></li>
     </ul>
   </nav>
 
@@ -82,6 +89,12 @@
   <script>
     let currentProduct = null;
 
+    // Helper function to resolve image paths
+    function resolveImagePath(path) {
+      if (!path) return '/images/placeholder.jpg';
+      return path.startsWith('https://') ? path : `/images/uploads/${path}`;
+    }
+
     // Récupérer l'ID du produit depuis l'URL
     const productId = window.location.pathname.split('/').pop();
 
@@ -117,16 +130,17 @@
 
       breadcrumb.textContent = currentProduct.name;
 
-      // Initialiser les images pour la galerie
-      productImages = currentProduct.images && currentProduct.images.length > 0
+      // Initialiser les images pour la galerie (avec chemins résolus)
+      const rawImages = currentProduct.images && currentProduct.images.length > 0
         ? currentProduct.images
         : [{ image_path: currentProduct.image_url || '/images/placeholder.jpg' }];
+
+      // Résoudre les chemins d'images
+      productImages = rawImages.map(img => ({ ...img, image_path: resolveImagePath(img.image_path) }));
       currentImageIndex = 0;
 
-      // Préparer la galerie d'images
-      const images = currentProduct.images && currentProduct.images.length > 0
-        ? currentProduct.images
-        : [{ image_path: currentProduct.image_url || '/images/placeholder.jpg' }];
+      // Préparer la galerie d'images (avec chemins résolus)
+      const images = productImages;
 
       container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
@@ -138,7 +152,13 @@
                    src="${images[0].image_path}"
                    alt="${currentProduct.name}"
                    style="width: 100%; border-radius: 12px; box-shadow: var(--shadow-medium);
-                          border: 4px solid var(--wood-light);">
+                          border: 4px solid var(--wood-light); filter: blur(20px); transform: scale(1.02);
+                          transition: filter 0.5s ease-out, transform 0.5s ease-out;
+                          background: linear-gradient(135deg, var(--wood-light), var(--cream));"
+                   loading="lazy" decoding="async"
+                   onload="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+                   onerror="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+              >
 
               ${images.length > 1 ? `
                 <button onclick="previousImage()"
@@ -344,11 +364,27 @@
 
       section.style.display = 'block';
 
-      container.innerHTML = products.map(product => `
+      container.innerHTML = products.map(product => {
+        // Résoudre le chemin de l'image
+        let imgPath;
+        if (product.images && product.images.length > 0) {
+          imgPath = resolveImagePath(product.images[0].image_path);
+        } else {
+          imgPath = resolveImagePath(product.image_url);
+        }
+
+        return `
         <div class="product-card" onclick="window.location.href='/produit/${product.id}'">
-          <img src="${product.image_url || '/images/placeholder.jpg'}"
+          <img src="${imgPath}"
                alt="${product.name}"
-               class="product-image">
+               class="product-image"
+               style="filter: blur(20px); transform: scale(1.1); transition: filter 0.5s ease-out, transform 0.5s ease-out; background: linear-gradient(135deg, var(--wood-light), var(--cream));"
+               loading="lazy" decoding="async"
+               onload="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+               onerror="this.style.filter='blur(0)'; this.style.transform='scale(1)'"
+               onmouseover="if(this.style.filter==='blur(0px)' || this.style.filter==='blur(0)') this.style.transform='scale(1.05)'"
+               onmouseout="this.style.transform='scale(1)'"
+          >
           <div class="product-info">
             <span class="product-category">${product.category}</span>
             <h3 class="product-name">${product.name}</h3>
@@ -357,7 +393,8 @@
             <button class="btn btn-primary" style="width: 100%;">Voir</button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     // Gestion de la galerie d'images
@@ -417,4 +454,5 @@
     createWoodChips();
   </script>
 </body>
+
 </html>
