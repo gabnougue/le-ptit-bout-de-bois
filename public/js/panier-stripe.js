@@ -150,7 +150,23 @@ async function displayCartItems() {
     `;
     const summaryEl = document.getElementById('cart-summary');
     if (summaryEl) summaryEl.style.display = 'none';
+
+    // Centrer le contenu en modifiant le layout de la section parente
+    const cartSection = document.getElementById('cart-section');
+    if (cartSection) {
+      cartSection.style.display = 'block';
+      cartSection.style.maxWidth = '800px';
+      cartSection.style.margin = '0 auto';
+    }
     return;
+  }
+
+  // Réinitialiser le style de la section si le panier n'est pas vide
+  const cartSection = document.getElementById('cart-section');
+  if (cartSection) {
+    cartSection.style.display = ''; // Revient au CSS (grid)
+    cartSection.style.maxWidth = '';
+    cartSection.style.margin = '';
   }
 
   container.innerHTML = cartItems.map((item, index) => `
