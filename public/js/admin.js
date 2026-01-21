@@ -631,30 +631,40 @@ function removeNewImageGlobally(globalIndex) {
 async function saveProduct(event) {
     event.preventDefault();
 
-    const productId = document.getElementById('product-id').value;
-    const formData = new FormData();
+    // UI Loading state
+    const submitBtn = document.querySelector('#product-form button[type="submit"]');
+    const originalText = submitBtn.textContent;
 
-    formData.append('name', document.getElementById('product-name').value);
-    formData.append('category', document.getElementById('product-category').value);
-    formData.append('wood_type', document.getElementById('product-wood').value);
-    formData.append('price', document.getElementById('product-price').value);
-    formData.append('stock', document.getElementById('product-stock').value);
-    formData.append('description', document.getElementById('product-description').value);
-    formData.append('perlouze_link', document.getElementById('product-perlouze-link').value);
+    // Si déjà en cours, on ne fait rien
+    if (submitBtn.disabled) return;
 
-    // Vérifier le nombre total d'images
-    const totalImages = existingImages.length + newImageFiles.length;
-    if (totalImages > 10) {
-        showError(`Vous ne pouvez avoir que 10 images maximum (actuellement ${existingImages.length} existantes + ${newImageFiles.length} nouvelles)`);
-        return;
-    }
-
-    // Ajouter les nouvelles images
-    newImageFiles.forEach((file) => {
-        formData.append('images', file);
-    });
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Enregistrement... ⏳';
 
     try {
+        const productId = document.getElementById('product-id').value;
+        const formData = new FormData();
+
+        formData.append('name', document.getElementById('product-name').value);
+        formData.append('category', document.getElementById('product-category').value);
+        formData.append('wood_type', document.getElementById('product-wood').value);
+        formData.append('price', document.getElementById('product-price').value);
+        formData.append('stock', document.getElementById('product-stock').value);
+        formData.append('description', document.getElementById('product-description').value);
+        formData.append('perlouze_link', document.getElementById('product-perlouze-link').value);
+
+        // Vérifier le nombre total d'images
+        const totalImages = existingImages.length + newImageFiles.length;
+        if (totalImages > 10) {
+            showError(`Vous ne pouvez avoir que 10 images maximum (actuellement ${existingImages.length} existantes + ${newImageFiles.length} nouvelles)`);
+            throw new Error('Validation failed'); // Utiliser throw pour aller au catch/finally
+        }
+
+        // Ajouter les nouvelles images
+        newImageFiles.forEach((file) => {
+            formData.append('images', file);
+        });
+
         const url = productId ? `/api/admin/products/${productId}` : '/api/admin/products';
         const method = productId ? 'PUT' : 'POST';
 
@@ -753,8 +763,15 @@ async function saveProduct(event) {
         loadStats();
 
     } catch (error) {
-        console.error('Erreur:', error);
-        showError('Erreur lors de l\'enregistrement du produit');
+        if (error.message !== 'Validation failed') {
+            console.error('Erreur:', error);
+            showError('Erreur lors de l\'enregistrement du produit');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enregistrer';
+        }
     }
 }
 
