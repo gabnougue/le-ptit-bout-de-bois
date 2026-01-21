@@ -1982,7 +1982,14 @@ function displayBoutiqueImages() {
         </button>
         <div style="display: flex; align-items: center; gap: 0.3rem;">
           <span style="color: var(--slate-gray); font-size: 0.85rem; white-space: nowrap;">Pos.</span>
-          <span style="font-weight: bold; color: var(--wood-dark); min-width: 20px; text-align: center;">${index + 1}</span>
+          <input type="number"
+                 value="${index + 1}"
+                 min="1"
+                 max="${boutiqueImages.length}"
+                 onchange="changeBoutiqueImagePosition('${img.id}', this.value)"
+                 disabled="${isUploading}"
+                 style="width: 50px; padding: 0.4rem; text-align: center; border: 2px solid var(--wood-medium);
+                        border-radius: 8px; font-size: 0.9rem; font-weight: 600; -moz-appearance: textfield;">
         </div>
         <button onclick="moveBoutiqueImage('${img.id}', 1)"
                 class="btn btn-secondary"
@@ -2094,5 +2101,46 @@ async function moveBoutiqueImage(id, direction) {
     } catch (e) {
         console.error('Erreur reorder', e);
         // On pourrait rollback, mais pour le reorder l'utilisateur peut juste recliquer
+    }
+}
+
+// Changer directement la position (Optimiste)
+async function changeBoutiqueImagePosition(id, newPosition) {
+    const newPos = parseInt(newPosition);
+
+    // Validation
+    if (isNaN(newPos) || newPos < 1 || newPos > boutiqueImages.length) {
+        displayBoutiqueImages(); // Réafficher pour rétablir la valeur visuelle correcte
+        return;
+    }
+
+    const currentIndex = boutiqueImages.findIndex(img => String(img.id) === String(id));
+    if (currentIndex === -1) return;
+
+    // Si c'est déjà la bonne position
+    if (currentIndex + 1 === newPos) return;
+
+    // 1. Déplacer l'élément localement
+    const [movedImage] = boutiqueImages.splice(currentIndex, 1);
+    boutiqueImages.splice(newPos - 1, 0, movedImage);
+
+    // 2. Update UI INSTANTANÉMENT
+    displayBoutiqueImages();
+
+    // 3. Update Server
+    const updatedImages = boutiqueImages.map((img, idx) => ({
+        id: img.id,
+        display_order: idx + 1
+    }));
+
+    try {
+        await fetch('/api/boutique/images/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ images: updatedImages })
+        });
+    } catch (e) {
+        console.error('Erreur reorder', e);
+        loadBoutiqueImages(); // Rollback en rechargeant
     }
 }
