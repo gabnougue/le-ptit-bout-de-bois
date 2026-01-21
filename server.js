@@ -112,9 +112,23 @@ app.get(ADMIN_PATH, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
 });
 
+// Route de secours explicite au cas où ADMIN_PATH est mal configuré
+if (ADMIN_PATH !== '/backoffice-bout-de-bois') {
+  app.get('/backoffice-bout-de-bois', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
+  });
+}
+
 app.get(`${ADMIN_PATH}/dashboard`, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'dashboard.html'));
 });
+
+// Route de secours pour le dashboard
+if (ADMIN_PATH !== '/backoffice-bout-de-bois') {
+  app.get('/backoffice-bout-de-bois/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'dashboard.html'));
+  });
+}
 
 // Démarrage du serveur (uniquement en local, pas sur Vercel)
 if (process.env.NODE_ENV !== 'production') {
