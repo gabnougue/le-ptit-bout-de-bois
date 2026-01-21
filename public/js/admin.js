@@ -2032,7 +2032,22 @@ async function uploadSingleBoutiqueImage(file, tempId) {
     formData.append('image', file);
     try {
         const response = await fetch('/api/boutique/images', { method: 'POST', body: formData });
-        if (!response.ok) throw new Error();
+
+        if (!response.ok) {
+            let errorMsg = `Erreur ${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.error) errorMsg = errorData.error;
+            } catch (jsonErr) {
+                // Si ce n'est pas du JSON, essayer le texte
+                try {
+                    const text = await response.text();
+                    if (text) errorMsg = text.substring(0, 50); // Limiter la longueur
+                } catch (textErr) { }
+            }
+            throw new Error(errorMsg);
+        }
+
         const newImage = await response.json();
 
         const idx = boutiqueImages.findIndex(i => i.id === tempId);
@@ -2040,12 +2055,17 @@ async function uploadSingleBoutiqueImage(file, tempId) {
             boutiqueImages[idx] = newImage; // Remplace temp par réel
             displayBoutiqueImages();
             showNotification('Image ajoutée', 'success');
+        } else {
+            // Si l'image temporaire a été supprimée ou perdue, on ajoute la nouvelle à la fin
+            boutiqueImages.push(newImage);
+            displayBoutiqueImages();
         }
     } catch (e) {
-        console.error(e);
-        boutiqueImages = boutiqueImages.filter(i => i.id !== tempId); // Supprime si erreur
+        console.error('Error uploading boutique image:', e);
+        // Supprime l'image temporaire car l'upload a échoué
+        boutiqueImages = boutiqueImages.filter(i => i.id !== tempId);
         displayBoutiqueImages();
-        showNotification('Erreur upload', 'error');
+        showNotification(`Echec upload: ${e.message}`, 'error');
     }
 }
 
