@@ -1987,7 +1987,7 @@ function displayBoutiqueImages() {
                  min="1"
                  max="${boutiqueImages.length}"
                  onchange="changeBoutiqueImagePosition('${img.id}', this.value)"
-                 disabled="${isUploading}"
+                 ${isUploading ? 'disabled' : ''}
                  style="width: 50px; padding: 0.4rem; text-align: center; border: 2px solid var(--wood-medium);
                         border-radius: 8px; font-size: 0.9rem; font-weight: 600; -moz-appearance: textfield;">
         </div>
