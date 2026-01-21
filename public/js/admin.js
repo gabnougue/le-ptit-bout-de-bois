@@ -1093,6 +1093,15 @@ function showError(message) {
     }, 3000);
 }
 
+// Wrapper pour la compatibilité avec showNotification(message, type)
+function showNotification(message, type = 'success') {
+    if (type === 'error') {
+        showError(message);
+    } else {
+        showSuccess(message);
+    }
+}
+
 // ====================================
 // STATISTIQUES DÉTAILLÉES
 // ====================================
@@ -1925,7 +1934,7 @@ async function loadBoutiqueImages() {
         displayBoutiqueImages();
     } catch (error) {
         console.error('Erreur chargement images boutique:', error);
-        showError('Erreur lors du chargement des images');
+        showNotification('Erreur lors du chargement des images', 'error');
     }
 }
 
@@ -2005,7 +2014,7 @@ async function uploadBoutiqueImage() {
 
     if (!files || files.length === 0) return;
 
-    showSuccess('Envoi des images en cours...');
+    showNotification('Envoi des images en cours...', 'info');
 
     const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData();
@@ -2035,15 +2044,15 @@ async function uploadBoutiqueImage() {
         if (newImages.length > 0) {
             boutiqueImages.push(...newImages);
             displayBoutiqueImages();
-            showSuccess(`${newImages.length} image(s) ajoutée(s) avec succès !`);
+            showNotification(`${newImages.length} image(s) ajoutée(s) avec succès !`, 'success');
         } else {
-            showError('Erreur lors de l\'ajout des images');
+            showNotification('Erreur lors de l\'ajout des images', 'error');
         }
 
         input.value = '';
     } catch (error) {
         console.error('Erreur globale upload:', error);
-        showError('Erreur inattendue');
+        showNotification('Erreur inattendue', 'error');
     }
 }
 
@@ -2067,13 +2076,13 @@ async function deleteBoutiqueImage(id) {
             throw new Error('Erreur lors de la suppression');
         }
 
-        showSuccess('Image supprimée avec succès !');
+        showNotification('Image supprimée avec succès !', 'success');
     } catch (error) {
         console.error('Erreur suppression image:', error);
         // Rollback en cas d'erreur
         boutiqueImages = previousImages;
         displayBoutiqueImages();
-        showError('Erreur lors de la suppression');
+        showNotification('Erreur lors de la suppression', 'error');
     }
 }
 
@@ -2116,7 +2125,7 @@ async function moveBoutiqueImage(id, direction) {
 
     } catch (error) {
         console.error('Erreur réorganisation:', error);
-        showError('Erreur de synchronisation');
+        showNotification('Erreur de synchronisation', 'error');
         // Rollback par rechargement complet pour être sûr
         loadBoutiqueImages();
     }
@@ -2127,7 +2136,7 @@ async function changeBoutiqueImagePosition(id, newPosition) {
     const newPos = parseInt(newPosition);
 
     if (isNaN(newPos) || newPos < 1 || newPos > boutiqueImages.length) {
-        showError('Position invalide');
+        showNotification('Position invalide', 'error');
         displayBoutiqueImages();
         return;
     }
@@ -2150,7 +2159,7 @@ async function changeBoutiqueImagePosition(id, newPosition) {
 
     // Optimistic UI : Mise à jour immédiate
     displayBoutiqueImages();
-    showSuccess('Position mise à jour');
+    showNotification('Position mise à jour', 'success');
 
     // API
     const updatedImages = boutiqueImages.map(img => ({
@@ -2169,7 +2178,7 @@ async function changeBoutiqueImagePosition(id, newPosition) {
 
     } catch (error) {
         console.error('Erreur réorganisation:', error);
-        showError('Erreur de synchronisation');
+        showNotification('Erreur de synchronisation', 'error');
         loadBoutiqueImages();
     }
 }
