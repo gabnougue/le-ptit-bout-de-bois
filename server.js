@@ -106,7 +106,11 @@ app.get('/boutique', (req, res) => {
 });
 
 // URL secrète d'administration - NE PAS PARTAGER
-const ADMIN_PATH = process.env.ADMIN_PATH || '/backoffice-bout-de-bois';
+let adminPathEnv = process.env.ADMIN_PATH || '/backoffice-bout-de-bois';
+if (!adminPathEnv.startsWith('/')) {
+  adminPathEnv = '/' + adminPathEnv;
+}
+const ADMIN_PATH = adminPathEnv;
 
 app.get(ADMIN_PATH, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
