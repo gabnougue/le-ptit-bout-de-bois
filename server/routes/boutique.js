@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../models/database');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs').promises;
+const { put, del } = require('@vercel/blob');
 
 // Middleware pour vérifier l'authentification admin
 const requireAdmin = (req, res, next) => {
@@ -13,21 +13,8 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-const uploadDir = path.join(__dirname, '../../public/images/boutique/');
-
-// Assurer que le dossier existe
-fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
-
-// Configuration multer pour l'upload d'images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'boutique-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configuration multer pour l'upload en mémoire (pour transfert vers Blob)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -45,45 +32,11 @@ const upload = multer({
   }
 });
 
-// Récupérer toutes les images de la boutique (et les importer automatiquement si nécessaire)
+// Récupérer toutes les images de la boutique
 router.get('/images', async (req, res) => {
   try {
-    // D'abord, synchroniser automatiquement les images du dossier avec la base de données
-    const boutiqueDir = path.join(__dirname, '../../public/images/boutique');
-
-    try {
-      const files = await fs.readdir(boutiqueDir);
-
-      // Filtrer uniquement les images
-      const imageFiles = files.filter(file => {
-        const ext = path.extname(file).toLowerCase();
-        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-      });
-
-      // Récupérer les images déjà en base
-      const existingImages = await db.all('SELECT image_path FROM boutique_images');
-      const existingPaths = new Set(existingImages.map(img => img.image_path));
-
-      // Obtenir le dernier display_order
-      const lastImage = await db.get('SELECT MAX(display_order) as maxOrder FROM boutique_images');
-      let currentOrder = (lastImage?.maxOrder || 0) + 1;
-
-      // Ajouter chaque image qui n'existe pas encore
-      for (const file of imageFiles) {
-        const imagePath = `/images/boutique/${file}`;
-
-        if (!existingPaths.has(imagePath)) {
-          await db.run(
-            'INSERT INTO boutique_images (image_path, display_order) VALUES (?, ?)',
-            [imagePath, currentOrder]
-          );
-          currentOrder++;
-        }
-      }
-    } catch (syncError) {
-      console.error('Erreur synchronisation images:', syncError);
-      // Continue même si la synchro échoue
-    }
+    // On ne fait plus de synchronisation avec le dossier local car on utilise le Blob Storage
+    // Les images sont uniquement gérées via la base de données
 
     // Retourner toutes les images
     const images = await db.all(
@@ -96,20 +49,30 @@ router.get('/images', async (req, res) => {
   }
 });
 
-// Ajouter une nouvelle image
+// Ajouter une nouvelle image (Upload vers Vercel Blob)
 router.post('/images', requireAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucune image fournie' });
     }
 
-    const imagePath = '/images/boutique/' + req.file.filename;
+    // Générer un nom unique
+    const ext = path.extname(req.file.originalname);
+    const filename = `boutique/${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+
+    // Upload vers Vercel Blob
+    const blob = await put(filename, req.file.buffer, {
+      access: 'public',
+      contentType: req.file.mimetype
+    });
+
+    const imagePath = blob.url;
 
     // Obtenir le dernier display_order
     const lastImage = await db.get(
       'SELECT MAX(display_order) as maxOrder FROM boutique_images'
     );
-    const newOrder = (lastImage.maxOrder || 0) + 1;
+    const newOrder = (lastImage?.maxOrder || 0) + 1;
 
     const result = await db.run(
       'INSERT INTO boutique_images (image_path, display_order) VALUES (?, ?)',
@@ -122,12 +85,12 @@ router.post('/images', requireAdmin, upload.single('image'), async (req, res) =>
       display_order: newOrder
     });
   } catch (error) {
-    console.error('Erreur ajout image boutique:', error);
+    console.error('Erreur ajout image boutique (Blob):', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Supprimer une image
+// Supprimer une image (Suppression du Blob)
 router.delete('/images/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -142,13 +105,23 @@ router.delete('/images/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Image non trouvée' });
     }
 
-    // Supprimer le fichier physique
-    const filePath = path.join(__dirname, '../../public', image.image_path);
-    try {
-      await fs.unlink(filePath);
-    } catch (err) {
-      console.error('Erreur suppression fichier:', err);
-      // Continue même si le fichier n'existe pas
+    // Supprimer le fichier du Blob s'il s'agit d'une URL absolue (Blob)
+    // Si c'est un chemin local ancien (/images/boutique/...), on ne peut pas le supprimer du blob (sauf si on a migré)
+    // Mais on peut essayer de supprimer du disque si nécessaire, ou juste ignorer.
+    if (image.image_path.startsWith('http')) {
+      try {
+        await del(image.image_path);
+      } catch (blobError) {
+        console.error('Erreur suppression Blob:', blobError);
+        // On continue quand même pour supprimer de la DB
+      }
+    } else {
+      // Fallback: tentative suppression locale (pour rétrocompatibilité locale)
+      const fs = require('fs').promises;
+      const localPath = path.join(__dirname, '../../public', image.image_path);
+      try {
+        await fs.unlink(localPath);
+      } catch (e) { }
     }
 
     // Supprimer de la base de données
