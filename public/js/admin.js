@@ -2005,7 +2005,7 @@ async function uploadBoutiqueImage() {
 
     if (!files || files.length === 0) return;
 
-    console.log('Envoi des images en cours...');
+    showSuccess('Envoi des images en cours...');
 
     const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData();
