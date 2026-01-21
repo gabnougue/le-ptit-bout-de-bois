@@ -13,6 +13,59 @@ let existingImages = []; // Images déjà enregistrées
 let newImageFiles = []; // Nouveaux fichiers sélectionnés
 let imagesToDelete = []; // IDs des images à supprimer (appliqué à la sauvegarde)
 
+// Injection des styles pour les skeletons et loaders
+const adminStyles = document.createElement('style');
+adminStyles.innerHTML = `
+@keyframes skeletonPulse { 0% { opacity: 0.6; } 50% { opacity: 0.8; } 100% { opacity: 0.6; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton-loading {
+  color: transparent !important;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.5s infinite;
+  border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
+}
+.skeleton-loading::placeholder { color: transparent; }
+
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.8;
+}
+.btn-loading span { opacity: 0; }
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  margin-left: -10px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  animation: spin 1s linear infinite;
+}
+
+/* Skeleton Thread View */
+.thread-skeleton-header { width: 60%; height: 30px; margin-bottom: 10px; }
+.thread-skeleton-sub { width: 40%; height: 20px; }
+.thread-skeleton-msg { 
+    margin-bottom: 20px; 
+    border-radius: 15px; 
+    padding: 1rem;
+    height: 80px;
+    width: 70%;
+}
+.thread-skeleton-msg.left { float: left; clear: both; background: white; }
+.thread-skeleton-msg.right { float: right; clear: both; background: var(--wood-dark); opacity: 0.3; }
+`;
+document.head.appendChild(adminStyles);
+
 // Variable globale pour garder l'ordre mixte des images
 if (typeof window.allImagesOrderBoutDeBois === 'undefined') {
     window.allImagesOrderBoutDeBois = [];
@@ -181,69 +234,69 @@ function showAddProductModal() {
     document.getElementById('existing-images-container').style.display = 'none';
     document.getElementById('new-images-preview').style.display = 'none';
     document.getElementById('product-modal').classList.add('active');
-
-    // S'assurer que le formulaire est visible et le skeleton caché
-    const form = document.getElementById('product-form');
-    const skeleton = document.getElementById('product-modal-skeleton');
-    if (form) form.style.display = 'block';
-    if (skeleton) skeleton.style.display = 'none';
 }
 
 // Modifier un produit
 async function editProduct(productId) {
+    // 1. Afficher immédiatement le modal en mode "skeleton"
     currentEditingProduct = allProducts.find(p => p.id === productId);
 
-    if (!currentEditingProduct) return;
+    document.getElementById('modal-title').textContent = 'Modifier le produit';
 
-    // Afficher le modal immédiatement avec le skeleton
-    document.getElementById('product-modal').classList.add('active');
-    const form = document.getElementById('product-form');
-    const skeleton = document.getElementById('product-modal-skeleton');
-
-    if (form) form.style.display = 'none';
-    if (skeleton) skeleton.style.display = 'block';
-
-    // Charger les images du produit
-    try {
-        const response = await fetch(`/api/products/${productId}`);
-        const product = await response.json();
-        existingImages = (product.images || []).sort((a, b) => a.display_order - b.display_order);
-    } catch (error) {
-        console.error('Erreur chargement images:', error);
-        existingImages = [];
+    // Si on a les données de base dans allProducts, on peut pré-remplir partiellement
+    if (currentEditingProduct) {
+        document.getElementById('product-name').value = currentEditingProduct.name;
+        // Mais on va quand même mettre l'état skeleton pour charger les images et détails complets
     }
 
+    const modal = document.getElementById('product-modal');
+    const form = document.getElementById('product-form');
+
+    // Ajouter classes skeleton aux inputs
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => input.classList.add('skeleton-loading'));
+
+    modal.classList.add('active');
+
+    // Réinitialiser l'input file et images
     newImageFiles = [];
     imagesToDelete = [];
     window.allImagesOrderBoutDeBois = [];
-
-    document.getElementById('modal-title').textContent = 'Modifier le produit';
-    document.getElementById('product-id').value = currentEditingProduct.id;
-    document.getElementById('product-name').value = currentEditingProduct.name;
-    document.getElementById('product-category').value = currentEditingProduct.category;
-    document.getElementById('product-wood').value = currentEditingProduct.wood_type;
-    document.getElementById('product-price').value = currentEditingProduct.price;
-    document.getElementById('product-stock').value = currentEditingProduct.stock;
-    document.getElementById('product-description').value = currentEditingProduct.description || '';
-    document.getElementById('product-perlouze-link').value = currentEditingProduct.perlouze_link || '';
-
-    // Réinitialiser l'input file
     const imageInput = document.getElementById('product-images');
-    if (imageInput) {
-        imageInput.value = '';
-    }
+    if (imageInput) imageInput.value = '';
 
-    // Afficher les images existantes
-    displayExistingImages();
-
-    // Cacher l'aperçu des nouvelles images
+    document.getElementById('existing-images-container').style.display = 'none';
     document.getElementById('new-images-preview').style.display = 'none';
 
-    // Masquer le skeleton et afficher le formulaire
-    setTimeout(() => {
-        if (skeleton) skeleton.style.display = 'none';
-        if (form) form.style.display = 'block';
-    }, 300);
+    // 2. Charger les données complètes
+    try {
+        const response = await fetch(`/api/products/${productId}`);
+        const product = await response.json();
+
+        currentEditingProduct = product; // Mise à jour avec détails complets
+
+        // Remplir les champs
+        document.getElementById('product-id').value = product.id;
+        document.getElementById('product-name').value = product.name;
+        document.getElementById('product-category').value = product.category;
+        document.getElementById('product-wood').value = product.wood_type;
+        document.getElementById('product-price').value = product.price;
+        document.getElementById('product-stock').value = product.stock;
+        document.getElementById('product-description').value = product.description || '';
+        document.getElementById('product-perlouze-link').value = product.perlouze_link || '';
+
+        existingImages = (product.images || []).sort((a, b) => a.display_order - b.display_order);
+
+        // 3. Retirer skeleton et afficher images
+        inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        displayExistingImages();
+
+    } catch (error) {
+        console.error('Erreur chargement produit:', error);
+        inputs.forEach(input => input.classList.remove('skeleton-loading'));
+        showError('Impossible de charger les détails du produit');
+        closeProductModal();
+    }
 }
 
 // Fermer le modal
@@ -619,27 +672,17 @@ function removeNewImageGlobally(globalIndex) {
     displayNewImages();
 }
 
-// Suite dans le prochain fichier...
-
 // Enregistrer un produit
 async function saveProduct(event) {
     event.preventDefault();
 
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.textContent;
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
 
-    // Activer l'état de chargement
-    submitButton.disabled = true;
-    submitButton.innerHTML = `<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: text-bottom;"></span> Enregistrement...`;
+    // État de chargement sur le bouton
+    submitBtn.classList.add('btn-loading');
+    submitBtn.innerHTML = '<span>' + originalBtnText + '</span>'; // Envelopper texte pour cacher
 
-    // Ajouter style animation spin si pas présent
-    const existingStyle = document.getElementById('spin-style');
-    if (!existingStyle) {
-        const style = document.createElement('style');
-        style.id = 'spin-style';
-        style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-        document.head.appendChild(style);
-    }
 
     const productId = document.getElementById('product-id').value;
     const formData = new FormData();
@@ -656,9 +699,6 @@ async function saveProduct(event) {
     const totalImages = existingImages.length + newImageFiles.length;
     if (totalImages > 10) {
         showError(`Vous ne pouvez avoir que 10 images maximum (actuellement ${existingImages.length} existantes + ${newImageFiles.length} nouvelles)`);
-        // Restaurer le bouton
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
         return;
     }
 
@@ -769,10 +809,10 @@ async function saveProduct(event) {
         console.error('Erreur:', error);
         showError('Erreur lors de l\'enregistrement du produit');
     } finally {
-        // Restaurer le bouton (même si on ferme le modal, c'est mieux)
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+        // Restaurer le bouton
+        if (submitBtn) {
+            submitBtn.classList.remove('btn-loading');
+            submitBtn.textContent = originalBtnText;
         }
     }
 }
@@ -846,66 +886,14 @@ async function loadOrders() {
     }
 }
 
-// Afficher les commandes
-function displayOrders() {
-    const tbody = document.getElementById('orders-table-body');
-
-    // Filtrer les commandes livrées si demandé
-    const hideDelivered = document.getElementById('hide-delivered')?.checked;
-    const filteredOrders = hideDelivered ? allOrders.filter(o => o.status !== 'livre') : allOrders;
-
-    if (filteredOrders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Aucune commande</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = filteredOrders.map(order => {
-        const date = new Date(order.created_at).toLocaleDateString('fr-FR');
-        let statusBadge = '';
-
-        switch (order.status) {
-            case 'paye':
-                statusBadge = '<span style="background: #E0F2FE; color: #0369A1; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem;">Payé</span>';
-                break;
-            case 'expedie':
-                statusBadge = '<span style="background: #FEF3C7; color: #B45309; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem;">Expédié</span>';
-                break;
-            case 'livre':
-                statusBadge = '<span style="background: #D1FAE5; color: #047857; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem;">Livré</span>';
-                break;
-            default:
-                statusBadge = `<span style="background: #F3F4F6; color: #374151; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem;">${order.status}</span>`;
-        }
-
-        return `
-    <tr>
-      <td data-label="N°">#${order.id}</td>
-      <td data-label="Client">${order.customer_name}</td>
-      <td data-label="Email">${order.customer_email}</td>
-      <td data-label="Total" style="font-weight: 600;">${order.total_amount.toFixed(2)} €</td>
-      <td data-label="Statut">${statusBadge}</td>
-      <td data-label="Date">${date}</td>
-      <td data-label="Actions">
-        <button onclick="viewOrder(${order.id})" class="btn-icon btn-edit" title="Détails">👁️</button>
-        <select onchange="updateOrderStatus(${order.id}, this.value)" style="border: 1px solid var(--wood-light); border-radius: 4px; padding: 0.25rem;">
-          <option value="paye" ${order.status === 'paye' ? 'selected' : ''}>Payé</option>
-          <option value="expedie" ${order.status === 'expedie' ? 'selected' : ''}>Expédié</option>
-          <option value="livre" ${order.status === 'livre' ? 'selected' : ''}>Livré</option>
-        </select>
-      </td>
-    </tr>
-  `;
-    }).join('');
-}
-
-// Mettre à jour le badge de commandes
+// Mettre à jour la bulle de notification des commandes
 function updateOrdersBadge() {
-    const newOrdersCount = allOrders.filter(o => o.status === 'paye').length;
+    const pendingCount = allOrders.filter(o => o.status === 'pending').length;
     const badge = document.getElementById('orders-badge');
 
     if (badge) {
-        if (newOrdersCount > 0) {
-            badge.textContent = newOrdersCount;
+        if (pendingCount > 0) {
+            badge.textContent = pendingCount;
             badge.style.display = 'inline-block';
         } else {
             badge.style.display = 'none';
@@ -913,84 +901,191 @@ function updateOrdersBadge() {
     }
 }
 
-// Voir détail commande (modal simple)
+// Afficher les commandes
+function displayOrders() {
+    const tbody = document.getElementById('orders-table-body');
+    const hideDelivered = document.getElementById('hide-delivered')?.checked || false;
+
+    const statusLabels = {
+        'pending': 'En attente',
+        'confirmed': 'Confirmée',
+        'shipped': 'Expédiée',
+        'delivered': 'Livrée'
+    };
+
+    // Filtrer les commandes selon le checkbox
+    const filteredOrders = hideDelivered
+        ? allOrders.filter(order => order.status !== 'delivered')
+        : allOrders;
+
+    if (filteredOrders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Aucune commande</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredOrders.map(order => `
+    <tr>
+      <td data-label="N°">#${order.id}</td>
+      <td data-label="Client">${order.customer_name}</td>
+      <td data-label="Email">${order.customer_email}</td>
+      <td data-label="Total">${order.total_amount.toFixed(2)} €</td>
+      <td data-label="Statut"><span class="status-badge status-${order.status}">${statusLabels[order.status] || order.status}</span></td>
+      <td data-label="Date">${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
+      <td data-label="Actions">
+        <button onclick="viewOrder(${order.id})" class="btn-icon btn-edit" title="Voir">👁️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Voir une commande
 function viewOrder(orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
 
-    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-
     const modal = document.createElement('div');
     modal.className = 'modal active';
-    modal.style.zIndex = '10000';
     modal.innerHTML = `
-    <div class="modal-content" style="max-width: 600px;">
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
-        <h3 style="margin: 0;">Commande #${order.id}</h3>
-        <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
-      </div>
-      
-      <div style="margin-bottom: 1.5rem;">
-          <strong>Client:</strong> ${order.customer_name}<br>
-          <strong>Email:</strong> ${order.customer_email}<br>
-          <strong>Téléphone:</strong> ${order.customer_phone || '-'}<br>
-          <strong>Adresse:</strong> ${order.customer_address}
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Commande #${order.id}</h3>
+        <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
       </div>
 
-      <div style="background: var(--cream); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-          ${items.map(item => `
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px dashed #ccc; padding-bottom: 0.5rem;">
-                  <span>${item.name} (${item.quantity}x)</span>
-                  <span>${item.price} €</span>
-              </div>
-          `).join('')}
-          
-          <div style="display: flex; justify-content: space-between; margin-top: 1rem; font-weight: bold;">
-              <span>Total</span>
-              <span>${order.total_amount.toFixed(2)} €</span>
-          </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div>
+          <h4 style="color: var(--wood-dark); margin-bottom: 0.5rem;">Client</h4>
+          <p style="margin: 0.25rem 0;"><strong>Nom:</strong> ${order.customer_name}</p>
+          <p style="margin: 0.25rem 0;"><strong>Email:</strong> ${order.customer_email}</p>
+          <p style="margin: 0.25rem 0;"><strong>Téléphone:</strong> ${order.customer_phone || 'Non renseigné'}</p>
+        </div>
+
+        <div>
+          <h4 style="color: var(--wood-dark); margin-bottom: 0.5rem;">Livraison</h4>
+          <p style="margin: 0;">${order.customer_address || 'Non renseignée'}</p>
+        </div>
       </div>
-      
-      <button onclick="this.closest('.modal').remove()" class="btn btn-primary" style="width: 100%;">Fermer</button>
+
+      <div style="margin-top: 1.5rem;">
+        <h4 style="color: var(--wood-dark); margin-bottom: 0.5rem;">Articles commandés</h4>
+        ${order.items.map(item => `
+          <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--cream);">
+            <span>${item.name} x ${item.quantity}</span>
+            <span style="font-weight: 600;">${(item.price * item.quantity).toFixed(2)} €</span>
+          </div>
+        `).join('')}
+        <div style="display: flex; justify-content: space-between; padding: 1rem 0.5rem; font-weight: 700; font-size: 1.2rem;">
+          <span>Total</span>
+          <span style="color: var(--accent-orange);">${order.total_amount.toFixed(2)} €</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Statut de la commande</label>
+        <select id="order-status-${order.id}" onchange="updateOrderStatus(${order.id}, this.value, '${order.status}')" class="form-control"
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light);
+                       border-radius: 8px; background: var(--cream);">
+          <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ En attente</option>
+          <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>✅ Confirmée</option>
+          <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>📦 Expédiée</option>
+          <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>✔️ Livrée</option>
+        </select>
+      </div>
     </div>
   `;
+
     document.body.appendChild(modal);
 }
 
-// Mettre à jour statut commande
-async function updateOrderStatus(orderId, newStatus) {
+// Mettre à jour le statut d'une commande
+async function updateOrderStatus(orderId, newStatus, oldStatus) {
+    // Restaurer l'ancien statut dans le select temporairement
+    const selectElement = document.getElementById(`order-status-${orderId}`);
+    if (selectElement) {
+        selectElement.value = oldStatus;
+    }
+
+    // Messages selon le statut
+    const statusMessages = {
+        'pending': {
+            emoji: '⏳',
+            title: 'Mettre en attente ?',
+            message: 'La commande sera marquée comme en attente. Le client recevra un email l\'informant que la commande sera bientôt prise en charge.'
+        },
+        'confirmed': {
+            emoji: '✅',
+            title: 'Confirmer la commande ?',
+            message: 'La commande sera confirmée. Le client recevra un email l\'informant que vous préparez sa commande avec soin.'
+        },
+        'shipped': {
+            emoji: '📦',
+            title: 'Marquer comme expédiée ?',
+            message: 'La commande sera marquée comme expédiée. Le client recevra un email l\'informant que sa commande est en route.'
+        },
+        'delivered': {
+            emoji: '✔️',
+            title: 'Marquer comme livrée ?',
+            message: 'La commande sera marquée comme livrée.'
+        }
+    };
+
+    const statusInfo = statusMessages[newStatus] || { emoji: '❓', title: 'Modifier le statut ?', message: 'Le statut de la commande va être modifié.' };
+
+    // Demander confirmation
+    const confirmed = await showConfirm({
+        title: statusInfo.title,
+        message: statusInfo.message,
+        icon: statusInfo.emoji,
+        confirmText: 'Confirmer',
+        cancelText: 'Annuler'
+    });
+
+    if (!confirmed) {
+        // L'utilisateur a annulé, le select est déjà restauré
+        return;
+    }
+
+    // L'utilisateur a confirmé, mettre à jour le statut
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ status: newStatus })
         });
 
-        if (response.ok) {
-            showSuccess('Statut mis à jour');
-            loadOrders();
-            loadStats();
-        } else {
-            showError('Erreur mise à jour statut');
+        if (!response.ok) {
+            throw new Error('Erreur lors de la mise à jour');
         }
+
+        // Mettre à jour le select avec le nouveau statut
+        if (selectElement) {
+            selectElement.value = newStatus;
+        }
+
+        showSuccess('Statut mis à jour avec succès ! Un email a été envoyé au client.');
+        loadOrders();
+
     } catch (error) {
         console.error('Erreur:', error);
-        showError('Erreur lors de la mise à jour');
+        showError('Erreur lors de la mise à jour du statut');
+        // Restaurer l'ancien statut en cas d'erreur
+        if (selectElement) {
+            selectElement.value = oldStatus;
+        }
     }
+}
+
+// Enregistrer les paramètres
+async function saveSettings() {
+    // À implémenter selon les besoins
+    showSuccess('Paramètres enregistrés');
 }
 
 // Afficher succès
 function showSuccess(message) {
-    // Détecter si car est dispo
-    if (window.cart && window.cart.showNotification) {
-        window.cart.showNotification(message);
-    } else {
-        const div = document.createElement('div');
-        div.style.cssText = "position: fixed; top: 20px; right: 20px; background: #10B981; color: white; padding: 1rem 2rem; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);";
-        div.textContent = message;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
-    }
+    cart.showNotification(message);
 }
 
 // Afficher erreur
@@ -1151,68 +1246,72 @@ function updateMessagesBadge() {
 
 // Voir une conversation complète
 async function viewThread(threadId) {
-    const thread = allThreads.find(t => t.id === threadId);
-    if (!thread) return;
+    // 1. Ouvrir modal skeleton immédiatement
+    const threadStub = allThreads.find(t => t.id === threadId) || { subject: 'Chargement...', customer_name: '...' };
 
-    // Créer le modal immédiatement avec un skeleton
     const modal = document.createElement('div');
     modal.className = 'modal active';
-    modal.id = `thread-modal-${threadId}`;
     modal.style.zIndex = '10001';
+    modal.id = `thread-modal-${threadId}`;
+
+    // Contenu Skeleton
     modal.innerHTML = `
-    <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
-        <div>
-          <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.8rem;">
-            ${thread.subject}
-          </h3>
-          <p style="margin: 0.5rem 0 0 0; color: var(--slate-gray); font-size: 0.9rem;">
-            <strong>${thread.customer_name}</strong> (${thread.customer_email})
-          </p>
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+          <div style="width: 100%">
+            <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.8rem;">
+               <div class="skeleton-loading thread-skeleton-header"></div>
+            </h3>
+            <p style="margin: 0.5rem 0 0 0; color: var(--slate-gray); font-size: 0.9rem;">
+               <div class="skeleton-loading thread-skeleton-sub"></div>
+            </p>
+          </div>
+          <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
         </div>
-        <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
-      </div>
 
-      <div id="thread-messages-container" style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; max-height: 50vh;">
-         <!-- Skeleton Messages -->
-         <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
-             <div style="width: 60%; height: 80px; background: white; border-radius: 15px; padding: 1rem; box-shadow: var(--shadow-light); animation: skeletonPulse 1.5s infinite;"></div>
-         </div>
-         <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
-             <div style="width: 50%; height: 60px; background: rgba(139, 69, 19, 0.2); border-radius: 15px; padding: 1rem; animation: skeletonPulse 1.5s infinite;"></div>
-         </div>
-         <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
-             <div style="width: 70%; height: 100px; background: white; border-radius: 15px; padding: 1rem; box-shadow: var(--shadow-light); animation: skeletonPulse 1.5s infinite;"></div>
-         </div>
+        <div id="thread-messages-container" style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; height: 400px; max-height: 50vh;">
+           <!-- Skeletons messages -->
+           <div class="skeleton-loading thread-skeleton-msg left"></div>
+           <div class="skeleton-loading thread-skeleton-msg right"></div>
+           <div class="skeleton-loading thread-skeleton-msg left"></div>
+        </div>
       </div>
-
-      <div id="thread-response-area">
-        <button disabled class="btn btn-primary" style="width: 100%; padding: 1rem; opacity: 0.7; cursor: not-allowed;">
-          Chargement...
-        </button>
-      </div>
-    </div>
-  `;
+    `;
     document.body.appendChild(modal);
 
     try {
         // Marquer comme lu
-        fetch(`/api/messages/threads/${threadId}/mark-read`, { method: 'POST' })
-            .then(() => loadThreads())
-            .catch(console.error);
+        await fetch(`/api/messages/threads/${threadId}/mark-read`, { method: 'POST' });
+        loadThreads();
 
         const response = await fetch(`/api/messages/threads/${threadId}/messages`);
         const messages = await response.json();
+        const thread = allThreads.find(t => t.id === threadId);
 
-        // Mettre à jour le contenu du conteneur de messages
-        const messagesContainer = modal.querySelector('#thread-messages-container');
+        if (!thread && !messages) {
+            modal.remove();
+            return;
+        }
 
-        if (messages.length === 0) {
-            messagesContainer.innerHTML = '<div style="text-align: center; color: var(--slate-gray);">Aucun message dans cette conversation.</div>';
-        } else {
-            messagesContainer.innerHTML = messages.map(msg => {
-                const isCustomer = msg.sender_type === 'customer';
-                return `
+        // Remplacer le contenu du modal avec les vraies données
+        modal.innerHTML = `
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+          <div>
+            <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.8rem;">
+              ${thread ? thread.subject : 'Conversation'}
+            </h3>
+            <p style="margin: 0.5rem 0 0 0; color: var(--slate-gray); font-size: 0.9rem;">
+              <strong>${thread ? thread.customer_name : ''}</strong> (${thread ? thread.customer_email : ''})
+            </p>
+          </div>
+          <button onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; max-height: 50vh;">
+          ${messages.map(msg => {
+            const isCustomer = msg.sender_type === 'customer';
+            return `
               <div style="margin-bottom: 1.5rem; display: flex; justify-content: ${isCustomer ? 'flex-start' : 'flex-end'};">
                 <div style="max-width: 70%; background: ${isCustomer ? 'white' : 'var(--wood-dark)'}; color: ${isCustomer ? 'var(--slate-gray)' : 'white'}; padding: 1rem; border-radius: 15px; box-shadow: var(--shadow-light);">
                   <div style="margin-bottom: 0.5rem;">
@@ -1237,32 +1336,23 @@ async function viewThread(threadId) {
                 </div>
               </div>
             `;
-            }).join('');
+        }).join('')}
+        </div>
 
-            // Scroll en bas
-            setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 100);
-        }
-
-        // Activer le bouton de réponse
-        const footerDiv = modal.querySelector('#thread-response-area');
-        if (footerDiv) {
-            footerDiv.innerHTML = `
-            <button onclick="replyToThread(${threadId})" class="btn btn-primary" style="width: 100%; padding: 1rem;">
+        <div>
+          <button onclick="replyToThread(${threadId})" class="btn btn-primary" style="width: 100%; padding: 1rem;">
             💬 Répondre
-            </button>
-        `;
-        }
+          </button>
+        </div>
+      </div>
+    `;
 
     } catch (error) {
         console.error('Erreur:', error);
         showError('Erreur lors du chargement de la conversation');
-        // modal.remove(); // On peut laisser le modal ouvert avec l'erreur visible ou le fermer
+        modal.remove();
     }
 }
-
-// Suite des fonctions (replyToThread, etc.)
 
 // Répondre à un thread
 function replyToThread(threadId) {
@@ -1330,12 +1420,6 @@ async function sendReply(event, threadId) {
         return;
     }
 
-    // Loader sur le bouton d'envoi
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span style="display: inline-block; width: 12px; height: 12px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 5px;"></span> Envoi...';
-
     const formData = new FormData();
     formData.append('message', message);
 
@@ -1362,14 +1446,10 @@ async function sendReply(event, threadId) {
             loadThreads();
         } else {
             showError(result.error || 'Erreur lors de l\'envoi');
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
         }
     } catch (error) {
         console.error('Erreur:', error);
         showError('Erreur lors de l\'envoi de la réponse');
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
     }
 }
 
