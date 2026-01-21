@@ -5,25 +5,19 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const path = require('path');
+const sharp = require('sharp');
+const { put } = require('@vercel/blob');
 
-// Configuration multer pour l'upload d'images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/images/products/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configuration de multer avec stockage en mémoire pour traitement avec sharp
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max en entrée
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
       return cb(null, true);
@@ -31,6 +25,29 @@ const upload = multer({
     cb(new Error('Seules les images sont autorisées'));
   }
 });
+
+// Fonction pour compresser et sauvegarder une image (via Vercel Blob)
+async function processAndSaveImage(fileBuffer, originalName) {
+  const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.webp';
+
+  // Compresser l'image avec sharp
+  const compressedBuffer = await sharp(fileBuffer)
+    .resize(800, 800, {
+      fit: 'inside',
+      withoutEnlargement: true
+    })
+    .webp({ quality: 80 })
+    .toBuffer();
+
+  // Upload vers Vercel Blob
+  const blob = await put(`uploads/${uniqueName}`, compressedBuffer, {
+    access: 'public',
+    contentType: 'image/webp'
+  });
+
+  // Retourner l'URL complète du blob
+  return blob.url;
+}
 
 // Rate limiting strict pour le login admin
 const loginLimiter = rateLimit({
@@ -132,26 +149,27 @@ router.post('/products', requireAdmin, (req, res, next) => {
     // Gérer les images si présentes
     if (req.files && req.files.images && req.files.images.length > 0) {
       const images = req.files.images;
-      let primaryImagePath = null;
+      let primaryImageUrl = null;
 
       for (let index = 0; index < images.length; index++) {
         const file = images[index];
-        const imagePath = `/images/products/${file.filename}`;
+        // Upload vers Vercel Blob avec compression
+        const imageUrl = await processAndSaveImage(file.buffer, file.originalname);
         const isPrimary = index === 0 ? 1 : 0;
 
         if (isPrimary) {
-          primaryImagePath = imagePath;
+          primaryImageUrl = imageUrl;
         }
 
         await db.run(`
           INSERT INTO product_images (product_id, image_path, display_order, is_primary)
           VALUES (?, ?, ?, ?)
-        `, [productId, imagePath, index + 1, isPrimary]);
+        `, [productId, imageUrl, index + 1, isPrimary]);
       }
 
       // Mettre à jour image_url du produit avec la première image
-      if (primaryImagePath) {
-        await db.run(`UPDATE products SET image_url = ? WHERE id = ?`, [primaryImagePath, productId]);
+      if (primaryImageUrl) {
+        await db.run(`UPDATE products SET image_url = ? WHERE id = ?`, [primaryImageUrl, productId]);
       }
 
       res.json({
@@ -205,12 +223,13 @@ router.put('/products/:id', requireAdmin, (req, res, next) => {
 
       for (let index = 0; index < images.length; index++) {
         const file = images[index];
-        const imagePath = `/images/products/${file.filename}`;
+        // Upload vers Vercel Blob avec compression
+        const imageUrl = await processAndSaveImage(file.buffer, file.originalname);
 
         await db.run(`
           INSERT INTO product_images (product_id, image_path, display_order, is_primary)
           VALUES (?, ?, ?, 0)
-        `, [id, imagePath, startOrder + index]);
+        `, [id, imageUrl, startOrder + index]);
       }
 
       res.json({
