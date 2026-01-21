@@ -193,18 +193,13 @@
           </p>
 
           <!-- Upload nouvelle image -->
-          <div
-            style="margin-bottom: 2rem; padding: 1.5rem; background: var(--cream); border-radius: 12px; border: 2px solid var(--wood-light);">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">
-              Ajouter une nouvelle photo
-            </label>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-              <input type="file" id="boutique-image-input" accept="image/*"
-                style="flex: 1; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px;">
-              <button onclick="uploadBoutiqueImage()" class="btn btn-primary">
-                Ajouter
-              </button>
-            </div>
+          <div style="margin-bottom: 2rem; display: flex; justify-content: flex-end;">
+            <input type="file" id="boutique-image-input" accept="image/*" multiple style="display: none;"
+              onchange="handleBoutiqueFiles(this)">
+            <button onclick="document.getElementById('boutique-image-input').click()" class="btn btn-primary"
+              style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+              ➕ Ajouter des photos
+            </button>
           </div>
 
           <!-- Grille des images existantes -->

@@ -1946,21 +1946,26 @@ function displayBoutiqueImages() {
     noImagesMsg.style.display = 'none';
     if (hint) hint.style.display = 'block';
 
-    grid.innerHTML = boutiqueImages.map((img, index) => `
-    <div class="boutique-image-item" data-id="${img.id}" data-order="${img.display_order}"
+    grid.innerHTML = boutiqueImages.map((img, index) => {
+        const isUploading = String(img.id).startsWith('temp_');
+        return `
+    <div class="boutique-image-item" data-id="${img.id}" 
          style="position: relative; background: white; border-radius: 12px; padding: 0.5rem;
-                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);">
+                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);
+                transition: transform 0.2s ease; ${isUploading ? 'opacity: 0.7;' : ''}">
 
-      <!-- Bouton supprimer en haut à droite -->
-      <button onclick="deleteBoutiqueImage(${img.id})"
+      ${isUploading ? '<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.5); z-index: 20; font-size: 2rem;">⏳</div>' : ''}
+
+      <!-- Bouton supprimer -->
+      <button onclick="deleteBoutiqueImage('${img.id}')"
+              ${isUploading ? 'disabled' : ''}
+              class="btn-icon-danger"
               style="position: absolute; top: 0.75rem; right: 0.75rem; z-index: 10;
                      background: var(--wood-medium); color: white; border: none;
                      width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
                      display: flex; align-items: center; justify-content: center;
-                     font-size: 1.2rem; font-weight: 700; transition: all 0.3s ease;
-                     box-shadow: 0 2px 8px rgba(139, 90, 60, 0.3);"
-              onmouseover="this.style.transform='scale(1.1) rotate(90deg)'; this.style.boxShadow='0 4px 12px rgba(139, 90, 60, 0.5)'; this.style.opacity='0.9'"
-              onmouseout="this.style.transform='scale(1) rotate(0deg)'; this.style.boxShadow='0 2px 8px rgba(139, 90, 60, 0.3)'; this.style.opacity='1'">
+                     font-size: 1.2rem; font-weight: 700; transition: all 0.2s ease;
+                     box-shadow: 0 2px 8px rgba(139, 90, 60, 0.3);">
         ✕
       </button>
 
@@ -1968,189 +1973,126 @@ function displayBoutiqueImages() {
            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;">
 
       <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
-        <button onclick="moveBoutiqueImage(${img.id}, -1)"
+        <button onclick="moveBoutiqueImage('${img.id}', -1)"
                 class="btn btn-secondary"
-                ${index === 0 ? 'disabled' : ''}
+                ${index === 0 || isUploading ? 'disabled' : ''}
                 style="padding: 0.5rem; font-size: 1rem; border-radius: 8px; width: 36px; height: 36px;
                        display: flex; align-items: center; justify-content: center; cursor: pointer;">
           ◀
         </button>
         <div style="display: flex; align-items: center; gap: 0.3rem;">
-          <span style="color: var(--slate-gray); font-size: 0.85rem; white-space: nowrap;">Position</span>
-          <input type="number"
-                 value="${index + 1}"
-                 min="1"
-                 max="${boutiqueImages.length}"
-                 onchange="changeBoutiqueImagePosition(${img.id}, this.value)"
-                 style="width: 45px; padding: 0.4rem; text-align: center; border: 2px solid var(--wood-medium);
-                        border-radius: 8px; font-size: 0.9rem; font-weight: 600; -moz-appearance: textfield;"
-                 onwheel="this.blur()">
+          <span style="color: var(--slate-gray); font-size: 0.85rem; white-space: nowrap;">Pos.</span>
+          <span style="font-weight: bold; color: var(--wood-dark); min-width: 20px; text-align: center;">${index + 1}</span>
         </div>
-        <button onclick="moveBoutiqueImage(${img.id}, 1)"
+        <button onclick="moveBoutiqueImage('${img.id}', 1)"
                 class="btn btn-secondary"
-                ${index === boutiqueImages.length - 1 ? 'disabled' : ''}
+                ${index === boutiqueImages.length - 1 || isUploading ? 'disabled' : ''}
                 style="padding: 0.5rem; font-size: 1rem; border-radius: 8px; width: 36px; height: 36px;
                        display: flex; align-items: center; justify-content: center; cursor: pointer;">
           ▶
         </button>
       </div>
     </div>
-  `).join('');
+  `;
+    }).join('');
 }
 
-// Ajouter une image de la boutique
-async function uploadBoutiqueImage() {
-    const input = document.getElementById('boutique-image-input');
-    const file = input.files[0];
+// Gérer l'ajout multiple (Optimiste)
+async function handleBoutiqueFiles(input) {
+    const files = Array.from(input.files);
+    if (files.length === 0) return;
 
-    if (!file) {
-        showNotification('Veuillez sélectionner une image', 'error');
-        return;
+    for (const file of files) {
+        const tempId = 'temp_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        const tempImage = {
+            id: tempId,
+            image_path: URL.createObjectURL(file),
+            display_order: boutiqueImages.length + 1,
+            isUploading: true
+        };
+        boutiqueImages.push(tempImage);
+        displayBoutiqueImages();
+
+        // Upload sans await pour ne pas bloquer la boucle d'affichage
+        uploadSingleBoutiqueImage(file, tempId);
     }
+    input.value = '';
+}
 
+// Upload individuel
+async function uploadSingleBoutiqueImage(file, tempId) {
     const formData = new FormData();
     formData.append('image', file);
-
     try {
-        const response = await fetch('/api/boutique/images', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de l\'upload');
-        }
-
+        const response = await fetch('/api/boutique/images', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error();
         const newImage = await response.json();
-        boutiqueImages.push(newImage);
-        displayBoutiqueImages();
-        input.value = '';
-        showNotification('Image ajoutée avec succès !', 'success');
-    } catch (error) {
-        console.error('Erreur upload image:', error);
-        showNotification('Erreur lors de l\'ajout de l\'image', 'error');
-    }
-}
 
-// Supprimer une image de la boutique
-async function deleteBoutiqueImage(id) {
-    if (!confirm('Voulez-vous vraiment supprimer cette image ?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/boutique/images/${id}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la suppression');
+        const idx = boutiqueImages.findIndex(i => i.id === tempId);
+        if (idx !== -1) {
+            boutiqueImages[idx] = newImage; // Remplace temp par réel
+            displayBoutiqueImages();
+            showNotification('Image ajoutée', 'success');
         }
-
-        boutiqueImages = boutiqueImages.filter(img => img.id !== id);
+    } catch (e) {
+        console.error(e);
+        boutiqueImages = boutiqueImages.filter(i => i.id !== tempId); // Supprime si erreur
         displayBoutiqueImages();
-        showNotification('Image supprimée avec succès !', 'success');
-    } catch (error) {
-        console.error('Erreur suppression image:', error);
-        showNotification('Erreur lors de la suppression', 'error');
+        showNotification('Erreur upload', 'error');
     }
 }
 
-// Déplacer une image de la boutique
+// Supprimer (Optimiste)
+async function deleteBoutiqueImage(id) {
+    if (!confirm('Supprimer cette image ?')) return;
+
+    // 1. Sauvegarder l'état actuel pour rollback
+    const previousImages = [...boutiqueImages];
+
+    // 2. Mise à jour optimiste
+    boutiqueImages = boutiqueImages.filter(img => String(img.id) !== String(id));
+    displayBoutiqueImages();
+
+    // 3. Appel API
+    try {
+        const response = await fetch(`/api/boutique/images/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error();
+        showNotification('Image supprimée', 'success');
+    } catch (e) {
+        // Rollback
+        boutiqueImages = previousImages;
+        displayBoutiqueImages();
+        showNotification('Erreur suppression', 'error');
+    }
+}
+
+// Déplacer (Optimiste, instantané)
 async function moveBoutiqueImage(id, direction) {
-    const index = boutiqueImages.findIndex(img => img.id === id);
-
+    const index = boutiqueImages.findIndex(img => String(img.id) === String(id));
     if (index === -1) return;
-
     const newIndex = index + direction;
-
     if (newIndex < 0 || newIndex >= boutiqueImages.length) return;
 
-    // Échanger les positions
+    // 1. Swap local
     [boutiqueImages[index], boutiqueImages[newIndex]] = [boutiqueImages[newIndex], boutiqueImages[index]];
 
-    // Mettre à jour les display_order
+    // 2. Update UI INSTANTANÉMENT
+    displayBoutiqueImages();
+
+    // 3. Update Server (silent)
     const updatedImages = boutiqueImages.map((img, idx) => ({
         id: img.id,
         display_order: idx + 1
     }));
 
     try {
-        const response = await fetch('/api/boutique/images/reorder', {
+        await fetch('/api/boutique/images/reorder', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ images: updatedImages })
         });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la réorganisation');
-        }
-
-        // Mettre à jour l'affichage local
-        boutiqueImages.forEach((img, idx) => {
-            img.display_order = idx + 1;
-        });
-
-        displayBoutiqueImages();
-    } catch (error) {
-        console.error('Erreur réorganisation:', error);
-        showNotification('Erreur lors de la réorganisation', 'error');
-        loadBoutiqueImages(); // Recharger pour rétablir l'ordre
-    }
-}
-
-// Changer directement la position d'une image de boutique
-async function changeBoutiqueImagePosition(id, newPosition) {
-    const newPos = parseInt(newPosition);
-
-    // Validation
-    if (isNaN(newPos) || newPos < 1 || newPos > boutiqueImages.length) {
-        showNotification('Position invalide', 'error');
-        displayBoutiqueImages(); // Réafficher pour rétablir la valeur
-        return;
-    }
-
-    const currentIndex = boutiqueImages.findIndex(img => img.id === id);
-    if (currentIndex === -1) return;
-
-    // Si c'est déjà la bonne position, ne rien faire
-    if (currentIndex + 1 === newPos) return;
-
-    // Déplacer l'élément à la nouvelle position
-    const [movedImage] = boutiqueImages.splice(currentIndex, 1);
-    boutiqueImages.splice(newPos - 1, 0, movedImage);
-
-    // Mettre à jour les display_order
-    const updatedImages = boutiqueImages.map((img, idx) => ({
-        id: img.id,
-        display_order: idx + 1
-    }));
-
-    try {
-        const response = await fetch('/api/boutique/images/reorder', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ images: updatedImages })
-        });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la réorganisation');
-        }
-
-        // Mettre à jour l'affichage local
-        boutiqueImages.forEach((img, idx) => {
-            img.display_order = idx + 1;
-        });
-
-        displayBoutiqueImages();
-        showNotification('Position mise à jour', 'success');
-    } catch (error) {
-        console.error('Erreur réorganisation:', error);
-        showNotification('Erreur lors de la réorganisation', 'error');
-        loadBoutiqueImages(); // Recharger pour rétablir l'ordre
+    } catch (e) {
+        console.error('Erreur reorder', e);
+        // On pourrait rollback, mais pour le reorder l'utilisateur peut juste recliquer
     }
 }
