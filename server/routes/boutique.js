@@ -13,10 +13,15 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+const uploadDir = path.join(__dirname, '../../public/images/boutique/');
+
+// Assurer que le dossier existe
+fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
+
 // Configuration multer pour l'upload d'images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/images/boutique/');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
