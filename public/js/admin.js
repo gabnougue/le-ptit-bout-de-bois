@@ -1979,8 +1979,25 @@ function displayBoutiqueImages() {
     grid.innerHTML = boutiqueImages.map((img, index) => `
     <div class="boutique-image-item" data-id="${img.id}" data-order="${img.display_order}"
          style="position: relative; background: white; border-radius: 12px; padding: 0.5rem;
-                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);">
+                box-shadow: var(--shadow-light); border: 3px solid var(--wood-light);
+                ${img.isLoading ? 'opacity: 0.7;' : ''}">
 
+      ${img.isLoading ? `
+      <!-- Overlay de chargement -->
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 15;
+                  background: rgba(255, 255, 255, 0.6); border-radius: 12px;
+                  display: flex; align-items: center; justify-content: center;
+                  flex-direction: column; gap: 0.5rem;">
+        <div style="font-size: 2rem; animation: spin 1s linear infinite;">⏳</div>
+        <span style="color: var(--wood-dark); font-weight: 600; font-size: 0.85rem;">Envoi en cours...</span>
+      </div>
+      <style>
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+      ` : `
       <!-- Bouton supprimer en haut à droite -->
       <button onclick="deleteBoutiqueImage(${img.id})"
               style="position: absolute; top: 0.75rem; right: 0.75rem; z-index: 10;
@@ -1993,10 +2010,13 @@ function displayBoutiqueImages() {
               onmouseout="this.style.transform='scale(1) rotate(0deg)'; this.style.boxShadow='0 2px 8px rgba(139, 90, 60, 0.3)'; this.style.opacity='1'">
         ✕
       </button>
+      `}
 
       <img src="${img.image_path}" alt="Boutique"
-           style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;">
+           style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;
+                  ${img.isLoading ? 'filter: grayscale(50%);' : ''}">
 
+      ${img.isLoading ? '' : `
       <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
         <button onclick="moveBoutiqueImage(${img.id}, -1)"
                 class="btn btn-secondary"
@@ -2024,6 +2044,7 @@ function displayBoutiqueImages() {
           ▶
         </button>
       </div>
+      `}
     </div>
   `).join('');
 }
@@ -2037,9 +2058,23 @@ async function uploadBoutiqueImage() {
 
     showNotification('Envoi des images en cours...', 'info');
 
-    const uploadPromises = Array.from(files).map(async (file) => {
+    // Créer des placeholders avec aperçu local immédiat
+    const placeholders = Array.from(files).map((file, index) => ({
+        id: `temp-${Date.now()}-${index}`,
+        image_path: URL.createObjectURL(file),
+        display_order: boutiqueImages.length + index + 1,
+        isLoading: true,
+        file: file
+    }));
+
+    // Afficher immédiatement les placeholders
+    boutiqueImages.push(...placeholders);
+    displayBoutiqueImages();
+
+    // Upload chaque fichier et remplacer le placeholder
+    const uploadPromises = placeholders.map(async (placeholder) => {
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', placeholder.file);
 
         try {
             const response = await fetch('/api/boutique/images', {
@@ -2051,21 +2086,36 @@ async function uploadBoutiqueImage() {
                 throw new Error('Erreur lors de l\'upload');
             }
 
-            return await response.json();
+            const uploadedImage = await response.json();
+
+            // Remplacer le placeholder par la vraie image
+            const placeholderIndex = boutiqueImages.findIndex(img => img.id === placeholder.id);
+            if (placeholderIndex !== -1) {
+                URL.revokeObjectURL(placeholder.image_path);
+                boutiqueImages[placeholderIndex] = uploadedImage;
+            }
+
+            return uploadedImage;
         } catch (error) {
             console.error('Erreur upload image:', error);
+            // Supprimer le placeholder en cas d'erreur
+            const placeholderIndex = boutiqueImages.findIndex(img => img.id === placeholder.id);
+            if (placeholderIndex !== -1) {
+                URL.revokeObjectURL(placeholder.image_path);
+                boutiqueImages.splice(placeholderIndex, 1);
+            }
             return null;
         }
     });
 
     try {
         const results = await Promise.all(uploadPromises);
-        const newImages = results.filter(img => img !== null);
+        const successCount = results.filter(img => img !== null).length;
 
-        if (newImages.length > 0) {
-            boutiqueImages.push(...newImages);
-            displayBoutiqueImages();
-            showNotification(`${newImages.length} image(s) ajoutée(s) avec succès !`, 'success');
+        displayBoutiqueImages();
+
+        if (successCount > 0) {
+            showNotification(`${successCount} image(s) ajoutée(s) avec succès !`, 'success');
         } else {
             showNotification('Erreur lors de l\'ajout des images', 'error');
         }
