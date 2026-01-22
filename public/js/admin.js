@@ -2049,6 +2049,48 @@ function displayBoutiqueImages() {
   `).join('');
 }
 
+// Compresser une image avant upload (max 1920px, qualité 0.8)
+async function compressImage(file, maxWidth = 1920, quality = 0.8) {
+    return new Promise((resolve) => {
+        // Si ce n'est pas une image, retourner tel quel
+        if (!file.type.startsWith('image/')) {
+            resolve(file);
+            return;
+        }
+
+        const img = new Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        img.onload = () => {
+            let { width, height } = img;
+
+            // Redimensionner si nécessaire
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+                if (blob && blob.size < file.size) {
+                    // Utiliser la version compressée
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                } else {
+                    // Garder l'original si la compression n'aide pas
+                    resolve(file);
+                }
+            }, 'image/jpeg', quality);
+        };
+
+        img.onerror = () => resolve(file);
+        img.src = URL.createObjectURL(file);
+    });
+}
+
 // Ajouter des images de la boutique (Support multiple)
 async function uploadBoutiqueImage() {
     const input = document.getElementById('boutique-image-input');
@@ -2056,10 +2098,15 @@ async function uploadBoutiqueImage() {
 
     if (!files || files.length === 0) return;
 
-    showNotification('Envoi des images en cours...', 'info');
+    showNotification('Compression et envoi des images...', 'info');
+
+    // Compresser les images avant de créer les placeholders
+    const compressedFiles = await Promise.all(
+        Array.from(files).map(file => compressImage(file))
+    );
 
     // Créer des placeholders avec aperçu local immédiat
-    const placeholders = Array.from(files).map((file, index) => ({
+    const placeholders = compressedFiles.map((file, index) => ({
         id: `temp-${Date.now()}-${index}`,
         image_path: URL.createObjectURL(file),
         display_order: boutiqueImages.length + index + 1,
