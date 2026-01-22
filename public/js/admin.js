@@ -2058,7 +2058,13 @@ async function uploadBoutiqueImage() {
 
 // Supprimer une image de la boutique
 async function deleteBoutiqueImage(id) {
-    if (!confirm('Voulez-vous vraiment supprimer cette image ?')) {
+    const confirmed = await showConfirm({
+        title: 'Supprimer l\'image',
+        message: 'Voulez-vous vraiment supprimer cette image ?',
+        icon: '🗑️'
+    });
+
+    if (!confirmed) {
         return;
     }
 
