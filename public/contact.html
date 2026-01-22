@@ -111,7 +111,7 @@
               style="color: var(--wood-medium); font-size: 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
               📧 Email
             </h3>
-            <p style="color: var(--slate-gray); margin: 0;">contact@lepetitboutdebois.fr</p>
+            <p id="contact-email-display" style="color: var(--slate-gray); margin: 0;">contact@lepetitboutdebois.fr</p>
           </div>
 
           <div style="margin-bottom: 1.5rem;">
@@ -205,6 +205,22 @@
         showError('Erreur lors de l\'envoi du message. Veuillez réessayer.');
       }
     }
+
+    // Charger l'email de contact depuis les paramètres
+    async function loadContactEmail() {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          if (settings.contact_email) {
+            document.getElementById('contact-email-display').textContent = settings.contact_email;
+          }
+        }
+      } catch (error) {
+        console.error('Erreur chargement paramètres:', error);
+      }
+    }
+    loadContactEmail();
 
     // Animation de copeaux
     function createWoodChips() {

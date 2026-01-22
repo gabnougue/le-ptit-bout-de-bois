@@ -1037,8 +1037,29 @@ async function updateOrderStatus(orderId, newStatus, oldStatus) {
 
 // Enregistrer les paramètres
 async function saveSettings() {
-    // À implémenter selon les besoins
-    showSuccess('Paramètres enregistrés');
+    const contactEmail = document.getElementById('setting-contact-email').value;
+    const perlouzeUrl = document.getElementById('setting-perlouze-url').value;
+
+    try {
+        // Sauvegarder l'email de contact
+        await fetch('/api/settings/contact_email', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: contactEmail })
+        });
+
+        // Sauvegarder l'URL de La p'tite perlouze
+        await fetch('/api/settings/perlouze_url', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: perlouzeUrl })
+        });
+
+        showSuccess('Paramètres enregistrés');
+    } catch (error) {
+        console.error('Erreur sauvegarde paramètres:', error);
+        showError('Erreur lors de la sauvegarde des paramètres');
+    }
 }
 
 // Afficher succès
