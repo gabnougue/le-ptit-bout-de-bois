@@ -2306,3 +2306,91 @@ async function changeBoutiqueImagePosition(id, newPosition) {
         loadBoutiqueImages();
     }
 }
+
+// ====================================
+// AIDE POUR LES LIENS INTER-SITES
+// ====================================
+
+// Afficher l'aide pour les liens vers l'autre site
+function showLinkHelp(site) {
+    const isPerlouze = site === 'perlouze';
+    const siteName = isPerlouze ? "La p'tite perlouze" : "Le p'tit bout de bois";
+    const baseUrl = isPerlouze ? 'https://www.laptiteperlouze.fr' : 'https://www.leptitboutdebois.fr';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.style.zIndex = '10002';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; color: var(--wood-dark); font-size: 1.5rem;">
+                    🔗 Liens vers ${siteName}
+                </h3>
+                <button onclick="this.closest('.modal').remove()" 
+                        style="background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--slate-gray);">×</button>
+            </div>
+            
+            <div style="background: var(--cream); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h4 style="color: var(--wood-dark); margin: 0 0 1rem 0; font-size: 1.1rem;">
+                    📌 Types de liens possibles
+                </h4>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="font-weight: 600; color: var(--wood-medium); margin: 0 0 0.5rem 0;">
+                        1. Lien vers un produit spécifique :
+                    </p>
+                    <code style="display: block; background: white; padding: 0.75rem; border-radius: 8px; font-size: 0.9rem; word-break: break-all; border: 2px solid var(--wood-light);">
+                        ${baseUrl}/produit/3
+                    </code>
+                    <small style="display: block; margin-top: 0.5rem; color: var(--slate-gray);">
+                        Remplacez "3" par l'ID du produit concerné
+                    </small>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="font-weight: 600; color: var(--wood-medium); margin: 0 0 0.5rem 0;">
+                        2. Lien vers une catégorie :
+                    </p>
+                    <code style="display: block; background: white; padding: 0.75rem; border-radius: 8px; font-size: 0.9rem; word-break: break-all; border: 2px solid var(--wood-light);">
+                        ${baseUrl}/catalogue?category=Bracelets
+                    </code>
+                    <small style="display: block; margin-top: 0.5rem; color: var(--slate-gray);">
+                        Remplacez "Bracelets" par le nom exact de la catégorie
+                    </small>
+                </div>
+                
+                <div>
+                    <p style="font-weight: 600; color: var(--wood-medium); margin: 0 0 0.5rem 0;">
+                        3. Lien vers le catalogue complet :
+                    </p>
+                    <code style="display: block; background: white; padding: 0.75rem; border-radius: 8px; font-size: 0.9rem; word-break: break-all; border: 2px solid var(--wood-light);">
+                        ${baseUrl}/catalogue
+                    </code>
+                </div>
+            </div>
+            
+            <div style="background: #FEF3C7; border-radius: 12px; padding: 1rem; border-left: 4px solid #F59E0B;">
+                <p style="margin: 0; color: #92400E; font-size: 0.9rem;">
+                    💡 <strong>Astuce :</strong> Copiez le lien directement depuis la barre d'adresse de votre navigateur 
+                    lorsque vous êtes sur la page souhaitée de ${siteName}.
+                </p>
+            </div>
+            
+            <button onclick="this.closest('.modal').remove()" 
+                    class="btn btn-primary" 
+                    style="width: 100%; margin-top: 1.5rem; padding: 0.75rem;">
+                J'ai compris
+            </button>
+        </div>
+    `;
+
+    // Fermer si on clique en dehors
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    document.body.appendChild(modal);
+}
+
