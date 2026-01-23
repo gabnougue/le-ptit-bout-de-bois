@@ -179,9 +179,9 @@ async function displayCartItems() {
         <p style="color: var(--slate-gray); margin-bottom: 0.5rem; font-size: 0.9rem;">${item.price.toFixed(2)} €</p>
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <button onclick="changeQuantity(${index}, -1)" style="background: var(--wood-light); border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 1rem;">-</button>
+            <button onclick="changeQuantity(${index}, -1)" style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background: var(--wood-medium); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; min-width: 36px; min-height: 36px;">-</button>
             <span style="font-weight: bold; min-width: 25px; text-align: center;">${item.quantity}</span>
-            <button onclick="changeQuantity(${index}, 1)" style="background: var(--wood-light); border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 1rem;">+</button>
+            <button onclick="changeQuantity(${index}, 1)" style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background: var(--wood-medium); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; min-width: 36px; min-height: 36px;">+</button>
           </div>
           <button onclick="removeFromCart(${index})" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">
             Retirer
