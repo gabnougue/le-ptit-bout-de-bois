@@ -105,6 +105,19 @@ app.get('/boutique', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'boutique.html'));
 });
 
+// Pages légales
+app.get('/mentions-legales', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'mentions-legales.html'));
+});
+
+app.get('/confidentialite', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'confidentialite.html'));
+});
+
+app.get('/cgv', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cgv.html'));
+});
+
 // URL secrète d'administration - NE PAS PARTAGER
 let adminPathEnv = process.env.ADMIN_PATH || '/backoffice-bout-de-bois';
 if (!adminPathEnv.startsWith('/')) {
