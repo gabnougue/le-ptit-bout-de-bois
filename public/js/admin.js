@@ -859,6 +859,22 @@ function updateOrdersBadge() {
     }
 }
 
+// Toggle et persistence du filtre commandes livrées
+function toggleHideDeliveredOrders() {
+  const checkbox = document.getElementById('hide-delivered');
+  localStorage.setItem('hideDeliveredOrders', checkbox.checked);
+  displayOrders();
+}
+
+// Restaurer l'état de la checkbox commandes au chargement
+function restoreHideDeliveredOrdersState() {
+  const saved = localStorage.getItem('hideDeliveredOrders');
+  const checkbox = document.getElementById('hide-delivered');
+  if (checkbox && saved !== null) {
+    checkbox.checked = saved === 'true';
+  }
+}
+
 // Afficher les commandes
 function displayOrders() {
     const tbody = document.getElementById('orders-table-body');
@@ -1148,6 +1164,22 @@ async function loadDetailedStats() {
 
 let allThreads = [];
 
+// Toggle et persistence du filtre conversations closes
+function toggleHideClosedThreads() {
+  const checkbox = document.getElementById('hide-closed-threads');
+  localStorage.setItem('hideClosedThreads', checkbox.checked);
+  loadThreads();
+}
+
+// Restaurer l'état de la checkbox conversations au chargement
+function restoreHideClosedThreadsState() {
+  const saved = localStorage.getItem('hideClosedThreads');
+  const checkbox = document.getElementById('hide-closed-threads');
+  if (checkbox && saved !== null) {
+    checkbox.checked = saved === 'true';
+  }
+}
+
 // Charger les threads de conversation
 async function loadThreads() {
     try {
@@ -1158,9 +1190,9 @@ async function loadThreads() {
         const tbody = document.querySelector('#threads-table-body');
         tbody.innerHTML = '';
 
-        // Filtrer les threads si la checkbox est cochée
+        // Filtrer les threads si la checkbox est cochée (masquer tout ce qui n'est pas 'open')
         const hideClosed = document.getElementById('hide-closed-threads')?.checked;
-        const filteredThreads = hideClosed ? allThreads.filter(t => t.status !== 'closed') : allThreads;
+        const filteredThreads = hideClosed ? allThreads.filter(t => t.status === 'open') : allThreads;
 
         if (filteredThreads.length === 0) {
             tbody.innerHTML = `
@@ -1870,7 +1902,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Charger les données
     loadStats();
     loadProducts();
+    restoreHideDeliveredOrdersState(); // Restaurer l'état du filtre commandes
     loadOrders();
+    restoreHideClosedThreadsState(); // Restaurer l'état du filtre conversations
     loadThreads();
     loadCategories();
     loadWoodTypes();

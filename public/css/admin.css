@@ -6,6 +6,40 @@
 @import url('styles.css');
 
 /* ====================================
+   Checkbox personnalisée aux couleurs du thème
+   ==================================== */
+input[type="checkbox"].theme-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--wood-medium);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+input[type="checkbox"].theme-checkbox:checked {
+  background: var(--wood-medium);
+}
+
+input[type="checkbox"].theme-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+input[type="checkbox"].theme-checkbox:hover {
+  border-color: var(--wood-light);
+}
+
+/* ====================================
    Page de connexion
    ==================================== */
 .admin-login-container {

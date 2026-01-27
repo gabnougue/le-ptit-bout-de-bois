@@ -142,6 +142,14 @@ router.post('/threads/:id/reply', requireAuth, upload.array('attachments', 5), a
     const admin = await db.get('SELECT username FROM admins WHERE id = ?', [req.session.adminId]);
     const adminName = admin?.username || 'le p\'tit bout de bois';
 
+    // Récupérer le dernier message du client pour le contexte
+    const lastCustomerMessage = await db.get(`
+      SELECT message FROM thread_messages
+      WHERE thread_id = ? AND sender_type = 'customer'
+      ORDER BY created_at DESC LIMIT 1
+    `, [id]);
+    const customerLastMsg = lastCustomerMessage?.message || '';
+
     // Insérer le message dans la BDD
     const messageResult = await db.run(`
       INSERT INTO thread_messages (thread_id, sender_type, sender_name, sender_email, message, has_attachments)
@@ -191,23 +199,30 @@ router.post('/threads/:id/reply', requireAuth, upload.array('attachments', 5), a
                 .header { background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
                 .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
                 .message-box { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #8B4513; }
+                .context-box { background: #f0f0f0; padding: 15px; margin: 15px 0; border-radius: 8px; font-size: 0.9em; color: #666; border-left: 3px solid #ccc; }
+                .context-label { font-weight: 600; color: #888; margin-bottom: 8px; font-size: 0.85em; }
                 .footer { text-align: center; margin-top: 20px; color: #666; font-size: 0.9em; }
               </style>
             </head>
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>🪵 Réponse du Ptit bout de bois</h1>
+                  <h1>🪵 Réponse du P'tit bout de bois</h1>
                 </div>
                 <div class="content">
+                  ${customerLastMsg ? `
+                  <div class="context-box">
+                    <p class="context-label">📩 En réponse à votre message :</p>
+                    <p style="margin: 0; font-style: italic;">"${customerLastMsg.length > 200 ? customerLastMsg.substring(0, 200) + '...' : customerLastMsg}"</p>
+                  </div>
+                  ` : ''}
                   <div class="message-box">
-                    <p>Bonjour ${thread.customer_name},</p>
                     <p>${message.replace(/\n/g, '<br>')}</p>
                     ${attachments.length > 0 ? `<p style="margin-top: 20px;"><strong>📎 Pièces jointes :</strong> ${attachments.map(f => f.originalname).join(', ')}</p>` : ''}
                   </div>
                 </div>
                 <div class="footer">
-                  <p><strong>le p'tit bout de bois</strong></p>
+                  <p><strong>Le p'tit bout de bois</strong></p>
                   <p>Créations artisanales en bois 🌳</p>
                   <p style="margin-top: 10px;">Vous pouvez répondre directement à cet email</p>
                 </div>
@@ -258,12 +273,106 @@ router.post('/threads/:id/reply', requireAuth, upload.array('attachments', 5), a
 // WEBHOOK RESEND POUR EMAILS ENTRANTS
 // ═══════════════════════════════════════════════════
 
+// Fonction pour nettoyer le contenu des emails (retirer les citations)
+function cleanEmailContent(content) {
+  if (!content) return '';
+
+  let cleaned = content;
+
+  // Supprimer les citations Gmail/Outlook en français
+  // "Le lun. 26 janv. 2026 à 17:35, <email> a écrit :"
+  cleaned = cleaned.split(/Le\s+\w+\.?\s+\d+\s+\w+\.?\s+\d+\s+[àa]\s+\d+[h:]\d+.*?a écrit\s*:/i)[0];
+
+  // Supprimer les citations en anglais
+  // "On Mon, Jan 26, 2026 at 5:35 PM, <email> wrote:"
+  cleaned = cleaned.split(/On\s+\w+,?\s+\w+\.?\s+\d+,?\s+\d+\s+at\s+\d+:\d+.*?wrote\s*:/i)[0];
+
+  // Supprimer tout après "-----Original Message-----"
+  cleaned = cleaned.split(/[-]+\s*Original Message\s*[-]+/i)[0];
+
+  // Supprimer tout après "---------- Forwarded message ----------"
+  cleaned = cleaned.split(/[-]+\s*Forwarded message\s*[-]+/i)[0];
+
+  // Supprimer les lignes qui commencent par ">" (citations)
+  cleaned = cleaned.split('\n')
+    .filter(line => !line.trim().startsWith('>'))
+    .join('\n');
+
+  // Supprimer les lignes vides multiples
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  // Supprimer les espaces en début/fin
+  cleaned = cleaned.trim();
+
+  return cleaned || content; // Retourner l'original si tout a été supprimé
+}
+
 // Webhook pour recevoir les emails entrants de Resend
 router.post('/webhook/inbound', express.json({ limit: '10mb' }), async (req, res) => {
   try {
-    const { from, to, subject, html, text } = req.body;
+    // Resend envoie les données dans req.body.data
+    const emailData = req.body.data || req.body;
+    const emailId = emailData.email_id;
 
-    console.log('📧 Email entrant reçu:', { from, subject });
+    // Récupérer les métadonnées de base
+    const from = emailData.from;
+    const to = emailData.to;
+    const subject = emailData.subject;
+
+    console.log('📧 Email entrant reçu:', { from, subject, emailId });
+
+    // Récupérer le contenu du mail via l'API Resend (Received Emails API)
+    let messageContent = '';
+    if (emailId && process.env.RESEND_API_KEY) {
+      try {
+        // Utiliser l'endpoint spécifique pour les emails reçus (inbound)
+        const emailResponse = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+          }
+        });
+        if (emailResponse.ok) {
+          const emailDetails = await emailResponse.json();
+          console.log('📨 Détails email reçus:', JSON.stringify(emailDetails).substring(0, 500));
+
+          // Le contenu peut être dans text, html, ou il faut télécharger le raw
+          messageContent = emailDetails.text || emailDetails.html || '';
+
+          // Si pas de contenu direct, essayer de télécharger le fichier raw
+          if (!messageContent && emailDetails.raw && emailDetails.raw.download_url) {
+            try {
+              const rawResponse = await fetch(emailDetails.raw.download_url);
+              if (rawResponse.ok) {
+                const rawEmail = await rawResponse.text();
+                // Extraire le contenu texte du mail brut (format RFC 2822)
+                const bodyMatch = rawEmail.match(/\r?\n\r?\n([\s\S]*)/);
+                if (bodyMatch) {
+                  messageContent = bodyMatch[1].trim();
+                }
+              }
+            } catch (rawError) {
+              console.error('❌ Erreur téléchargement raw:', rawError);
+            }
+          }
+
+          console.log('📨 Contenu récupéré:', messageContent.substring(0, 100) + '...');
+        } else {
+          const errorText = await emailResponse.text();
+          console.log('⚠️ Impossible de récupérer le contenu:', emailResponse.status, errorText);
+        }
+      } catch (fetchError) {
+        console.error('❌ Erreur fetch email content:', fetchError);
+      }
+    }
+
+    // Si pas de contenu récupéré, essayer les champs directs (fallback)
+    if (!messageContent) {
+      messageContent = emailData.text || emailData.html || emailData.body || emailData.plain_text || emailData.content || '[Contenu non disponible]';
+    }
+
+    // Nettoyer le contenu pour ne garder que le nouveau message (retirer les citations)
+    messageContent = cleanEmailContent(messageContent);
+    console.log('📨 Contenu nettoyé:', messageContent);
 
     // Extraire l'ID du thread depuis le sujet
     const threadIdMatch = subject?.match(/\[#THREAD-(\d+)\]/);
@@ -288,7 +397,7 @@ router.post('/webhook/inbound', express.json({ limit: '10mb' }), async (req, res
       await db.run(`
         INSERT INTO thread_messages (thread_id, sender_type, sender_name, sender_email, message)
         VALUES (?, 'customer', ?, ?, ?)
-      `, [threadId, customerName, customerEmail, text || html || '']);
+      `, [threadId, customerName, customerEmail, messageContent]);
 
       return res.json({ success: true, message: 'Nouveau thread créé' });
     }
@@ -311,7 +420,7 @@ router.post('/webhook/inbound', express.json({ limit: '10mb' }), async (req, res
     await db.run(`
       INSERT INTO thread_messages (thread_id, sender_type, sender_name, sender_email, message)
       VALUES (?, 'customer', ?, ?, ?)
-    `, [threadId, customerName, customerEmail, text || html || '']);
+    `, [threadId, customerName, customerEmail, messageContent]);
 
     // Mettre à jour le thread
     await db.run(`
