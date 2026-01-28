@@ -59,10 +59,19 @@ async function migrate() {
               file_path TEXT NOT NULL,
               file_size INTEGER,
               mime_type TEXT,
+              content TEXT,
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
               FOREIGN KEY (message_id) REFERENCES thread_messages(id) ON DELETE CASCADE
             )
         `);
+
+        // Ajouter la colonne content si elle n'existe pas
+        try {
+            await prod.execute('ALTER TABLE message_attachments ADD COLUMN content TEXT');
+            console.log('✅ Colonne content ajoutée à message_attachments');
+        } catch (e) {
+            console.log('ℹ️ Colonne content déjà présente');
+        }
 
         // 2. Migration des CONTACTS (si table contacts existe deja en prod, on injecte les manquants)
         console.log('👥 Migration contacts...');

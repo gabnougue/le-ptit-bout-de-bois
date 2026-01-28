@@ -33,9 +33,9 @@ const generalLimiter = rateLimit({
 });
 app.use(generalLimiter);
 
-// Middlewares
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Middlewares - limite augmentée pour les pièces jointes base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Bloquer accès direct aux fichiers /admin
 app.use('/admin', (req, res, next) => {
