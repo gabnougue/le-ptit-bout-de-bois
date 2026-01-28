@@ -2,10 +2,20 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// URL du site en production
+const SITE_URL = process.env.SITE_URL || 'https://www.leptitboutdebois.fr';
+const ADMIN_PATH = process.env.ADMIN_PATH || '/backoffice-bout-de-bois';
+
 // Envoyer une notification de nouvelle commande
 async function sendOrderNotification(order, items) {
-  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_EMAIL) {
+  if (!process.env.RESEND_API_KEY) {
     console.log('Resend non configuré, email non envoyé');
+    return;
+  }
+
+  const vendorEmail = process.env.VENDOR_EMAIL || process.env.CONTACT_EMAIL;
+  if (!vendorEmail) {
+    console.log('Email vendeur non configuré');
     return;
   }
 
@@ -14,11 +24,11 @@ async function sendOrderNotification(order, items) {
       `<li>${item.product_name} x ${item.quantity} - ${item.price}€</li>`
     ).join('');
 
-    const adminUrl = `http://localhost:${process.env.PORT || 3001}/admin/dashboard`;
+    const adminUrl = `${SITE_URL}${ADMIN_PATH}/dashboard.html#commandes`;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
-      to: process.env.CONTACT_EMAIL,
+      to: vendorEmail,
       subject: `🪵 Nouvelle commande #${order.id} - le p'tit bout de bois`,
       html: `
         <!DOCTYPE html>
@@ -92,17 +102,26 @@ async function sendOrderNotification(order, items) {
 
 // Envoyer une notification de nouveau message
 async function sendContactNotification(contact) {
-  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_EMAIL) {
+  if (!process.env.RESEND_API_KEY) {
     console.log('Resend non configuré, email non envoyé');
     return;
   }
 
+  const vendorEmail = process.env.VENDOR_EMAIL || process.env.CONTACT_EMAIL;
+  if (!vendorEmail) {
+    console.log('Email vendeur non configuré');
+    return;
+  }
+
   try {
-    const adminUrl = `http://localhost:${process.env.PORT || 3001}/admin/dashboard`;
+    const adminUrl = `${SITE_URL}${ADMIN_PATH}/dashboard.html#messages`;
+    const messagePreview = contact.message.length > 200 
+      ? contact.message.substring(0, 200) + '...' 
+      : contact.message;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
-      to: process.env.CONTACT_EMAIL,
+      to: vendorEmail,
       subject: `💬 Nouveau message de ${contact.name} - le p'tit bout de bois`,
       html: `
         <!DOCTYPE html>
@@ -140,7 +159,7 @@ async function sendContactNotification(contact) {
 
               <div class="message-box">
                 <h3>Message</h3>
-                <p>${contact.message.replace(/\n/g, '<br>')}</p>
+                <p>${messagePreview.replace(/\n/g, '<br>')}</p>
               </div>
 
               <div style="text-align: center;">
@@ -156,7 +175,7 @@ async function sendContactNotification(contact) {
       `
     });
 
-    console.log('✅ Email de notification de message envoyé');
+    console.log('✅ Email de notification de message envoyé à', vendorEmail);
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de l\'email de contact:', error);
   }
@@ -290,8 +309,83 @@ async function sendCustomerOrderEmail(order, items, status) {
   }
 }
 
+// Notifier le vendeur d'une nouvelle réponse email du client
+async function sendNewEmailNotification({ from, subject, message, threadId }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('Resend non configuré, notification non envoyée');
+    return;
+  }
+
+  const vendorEmail = process.env.VENDOR_EMAIL || process.env.CONTACT_EMAIL;
+  if (!vendorEmail) {
+    console.log('Email vendeur non configuré');
+    return;
+  }
+
+  try {
+    const adminUrl = `${SITE_URL}${ADMIN_PATH}/dashboard.html#messages`;
+    const messagePreview = message && message.length > 300 
+      ? message.substring(0, 300) + '...' 
+      : (message || '[Pas de contenu texte]');
+
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: vendorEmail,
+      subject: `📩 Nouvelle réponse de ${from} - le p'tit bout de bois`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
+            .message-box { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #8b4513; }
+            .info-box { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; }
+            .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); color: white; text-decoration: none; border-radius: 8px; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 0.9em; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📩 Nouvelle réponse client</h1>
+            </div>
+            <div class="content">
+              <div class="info-box">
+                <p><strong>De :</strong> ${from}</p>
+                <p><strong>Objet :</strong> ${subject || '(sans objet)'}</p>
+                ${threadId ? `<p><strong>Thread :</strong> #${threadId}</p>` : ''}
+              </div>
+
+              <div class="message-box">
+                <h3>Aperçu du message</h3>
+                <p>${messagePreview.replace(/\n/g, '<br>')}</p>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${adminUrl}" class="button">Répondre dans l'admin</a>
+              </div>
+            </div>
+            <div class="footer">
+              <p>le p'tit bout de bois - Créations artisanales en bois</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    console.log('✅ Notification nouvelle réponse email envoyée à', vendorEmail);
+  } catch (error) {
+    console.error('❌ Erreur notification email:', error);
+  }
+}
+
 module.exports = {
   sendOrderNotification,
   sendContactNotification,
-  sendCustomerOrderEmail
+  sendCustomerOrderEmail,
+  sendNewEmailNotification
 };
