@@ -2066,25 +2066,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadCategories();
     loadWoodTypes();
 
-    // Gestion du hash URL pour ouvrir le bon onglet
-    const hash = window.location.hash.replace('#', '');
-    if (hash) {
-      // Mapper les noms possibles vers les noms d'onglets réels
-      const hashMapping = {
-        'contacts': 'messages',
-        'commandes': 'orders',
-        'produits': 'products',
-        'statistiques': 'stats',
-        'parametres': 'settings'
-      };
-      const tabName = hashMapping[hash] || hash;
-      // Activer l'onglet correspondant
-      const tab = document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
-      if (tab) {
-        tab.click();
-      }
-    }
-
     // Gérer la sélection de nouvelles images
     const imageInput = document.getElementById('product-images');
     if (imageInput) {
@@ -2149,6 +2130,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
+
+    // Gestion du hash URL pour ouvrir le bon onglet (après init des onglets)
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      // Mapper les noms possibles vers les noms d'onglets réels
+      const hashMapping = {
+        'contacts': 'messages',
+        'commandes': 'orders',
+        'produits': 'products',
+        'statistiques': 'stats',
+        'parametres': 'settings'
+      };
+      const tabName = hashMapping[hash] || hash;
+      // Activer l'onglet correspondant
+      const tab = document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
+      if (tab) {
+        tab.click();
+      }
+    }
 });
 
 // ═══════════════════════════════════════════════════
