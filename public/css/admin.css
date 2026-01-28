@@ -932,10 +932,14 @@ input[type="checkbox"].theme-checkbox:hover {
     gap: 0.5rem;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: hidden;
     min-height: auto;
     border-bottom: 1px solid var(--cream);
+  }
+
+  /* Conteneur d'image dans les cellules */
+  td:has(img) {
+    align-items: center;
   }
 
   td:before {
