@@ -1099,7 +1099,51 @@ async function saveSettings() {
 
 // Afficher succès
 function showSuccess(message) {
-    cart.showNotification(message);
+    const notification = document.createElement('div');
+    notification.textContent = message;
+
+    // Détecter si on est sur mobile
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 999999;
+            animation: slideInBottom 0.3s ease;
+            font-weight: 600;
+            width: calc(100% - 2rem);
+            max-width: 400px;
+            text-align: center;
+        `;
+    } else {
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 999999;
+            animation: slideInRight 0.3s ease;
+            font-weight: 600;
+        `;
+    }
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
 }
 
 // Afficher erreur
