@@ -406,15 +406,73 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
     }
     
     // Fallback pour les pièces jointes depuis le webhook
-    if (attachments.length === 0 && emailData.attachments && emailData.attachments.length > 0) {
-      for (const att of emailData.attachments) {
-        if (att.content) {
+    if (attachments.length === 0) {
+      const webhookAttachments = emailData.attachments || emailData.files || req.body.attachments || [];
+      console.log(`📎 Vérification webhook pour pièces jointes: ${webhookAttachments.length} trouvée(s)`);
+      if (webhookAttachments.length > 0) {
+        console.log('📎 Format webhook attachments:', JSON.stringify(webhookAttachments[0]).substring(0, 500));
+      }
+      
+      for (const att of webhookAttachments) {
+        // Plusieurs formats possibles selon la source
+        const content = att.content || att.data || att.base64;
+        const filename = att.filename || att.name || att.fileName || 'attachment';
+        const mimetype = att.content_type || att.contentType || att.type || att.mimeType || 'application/octet-stream';
+        
+        if (content) {
           attachments.push({
-            filename: att.filename || 'attachment',
-            content: att.content,
-            mimetype: att.content_type || att.type || 'application/octet-stream',
-            size: att.size || 0
+            filename: filename,
+            content: content,
+            mimetype: mimetype,
+            size: att.size || content.length || 0
           });
+          console.log(`📎 Pièce jointe webhook ajoutée: ${filename}`);
+        } else if (att.id && emailId) {
+          // Si on a un ID de pièce jointe, télécharger via l'API Resend
+          try {
+            console.log(`📎 Téléchargement via API Resend: ${att.id}`);
+            const attResponse = await fetch(`https://api.resend.com/emails/receiving/${emailId}/attachments/${att.id}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+              }
+            });
+            if (attResponse.ok) {
+              const attBuffer = await attResponse.arrayBuffer();
+              const base64Content = Buffer.from(attBuffer).toString('base64');
+              attachments.push({
+                filename: filename,
+                content: base64Content,
+                mimetype: mimetype,
+                size: attBuffer.byteLength
+              });
+              console.log(`📎 Pièce jointe téléchargée via API: ${filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+            } else {
+              console.log(`⚠️ Erreur API pièce jointe: ${attResponse.status}`);
+            }
+          } catch (dlError) {
+            console.error('❌ Erreur téléchargement API:', dlError.message);
+          }
+        } else if (att.url || att.download_url) {
+          // Si c'est une URL, télécharger le contenu
+          try {
+            const attUrl = att.url || att.download_url;
+            console.log(`📎 Téléchargement pièce jointe depuis URL: ${attUrl}`);
+            const attResponse = await fetch(attUrl);
+            if (attResponse.ok) {
+              const attBuffer = await attResponse.arrayBuffer();
+              const base64Content = Buffer.from(attBuffer).toString('base64');
+              attachments.push({
+                filename: filename,
+                content: base64Content,
+                mimetype: mimetype,
+                size: attBuffer.byteLength
+              });
+              console.log(`📎 Pièce jointe téléchargée: ${filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+            }
+          } catch (dlError) {
+            console.error('❌ Erreur téléchargement:', dlError.message);
+          }
         }
       }
     }
