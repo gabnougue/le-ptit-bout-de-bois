@@ -1005,8 +1005,11 @@ input[type="checkbox"].theme-checkbox:hover {
 
   /* Images produits dans les tables */
   td img {
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: center;
     display: block;
     align-self: flex-start;
     border-radius: 12px;
