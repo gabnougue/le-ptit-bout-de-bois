@@ -243,15 +243,13 @@
             <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter une
               catégorie</label>
             <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
-              <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="new-category-input" placeholder="Nom de la catégorie"
-                  style="flex: 2; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
-                <input type="text" id="new-category-emoji" placeholder="Emoji" maxlength="4"
-                  style="flex: 0 0 100px; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
-                <input type="text" id="new-category-description" placeholder="Description courte"
-                  style="flex: 2; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
-              </div>
-              <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="new-category-input" placeholder="Nom de la catégorie"
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+              <input type="text" id="new-category-emoji" placeholder="Emoji" maxlength="4"
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+              <input type="text" id="new-category-description" placeholder="Description courte"
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <button type="button" onclick="addCategory()" id="category-submit-btn" class="btn btn-primary">Ajouter
                   la catégorie</button>
                 <button type="button" onclick="cancelEditCategory()" id="category-cancel-btn" class="btn btn-secondary"

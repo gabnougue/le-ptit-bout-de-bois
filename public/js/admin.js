@@ -1737,26 +1737,30 @@ function displayCategories() {
     }
 
     container.innerHTML = allCategories.map(cat => `
-    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem;
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem;
                 background: white; border: 2px solid var(--wood-light); border-radius: 12px;">
-      <div style="font-size: 2rem;">${cat.emoji || '🪵'}</div>
-      <div style="flex: 1;">
-        <div style="font-weight: 600; color: var(--wood-dark);">${cat.name}</div>
-        <div style="font-size: 0.9rem; color: var(--slate-gray);">${cat.description || ''}</div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="font-size: 1.5rem;">${cat.emoji || '🪵'}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; color: var(--wood-dark); word-break: break-word;">${cat.name}</div>
+          <div style="font-size: 0.85rem; color: var(--slate-gray); word-break: break-word;">${cat.description || ''}</div>
+        </div>
       </div>
-      <button onclick="editCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', '${(cat.emoji || '🪵').replace(/'/g, "\\'")}', '${(cat.description || '').replace(/'/g, "\\'")}')"
-              class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-        Modifier
-      </button>
-      <button onclick="deleteCategory(${cat.id})"
-              style="background: #C17B7B; color: white; border: none; padding: 0.5rem; border-radius: 8px;
-                     cursor: pointer; font-weight: 600; font-size: 1.2rem; transition: all 0.2s ease;
-                     width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
-              onmouseover="this.style.background='#A86565'; this.style.transform='scale(1.1) rotate(90deg)'; this.style.boxShadow='0 4px 10px rgba(193, 123, 123, 0.3)'"
-              onmouseout="this.style.background='#C17B7B'; this.style.transform='scale(1) rotate(0deg)'; this.style.boxShadow='none'"
-              title="Supprimer">
-        ✕
-      </button>
+      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button onclick="editCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', '${(cat.emoji || '🪵').replace(/'/g, "\\'")}', '${(cat.description || '').replace(/'/g, "\\'")}')"
+                class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+          Modifier
+        </button>
+        <button onclick="deleteCategory(${cat.id})"
+                style="background: #C17B7B; color: white; border: none; padding: 0.4rem; border-radius: 8px;
+                       cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s ease;
+                       width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"
+                onmouseover="this.style.background='#A86565'; this.style.transform='scale(1.1) rotate(90deg)'; this.style.boxShadow='0 4px 10px rgba(193, 123, 123, 0.3)'"
+                onmouseout="this.style.background='#C17B7B'; this.style.transform='scale(1) rotate(0deg)'; this.style.boxShadow='none'"
+                title="Supprimer">
+          ✕
+        </button>
+      </div>
     </div>
   `).join('');
 }
