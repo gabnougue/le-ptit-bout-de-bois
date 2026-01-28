@@ -4,10 +4,10 @@
 
 // Injecter les styles pour le chargement progressif des images
 (function injectImageLoadStyles() {
-  if (document.getElementById('admin-image-load-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'admin-image-load-styles';
-  style.textContent = `
+    if (document.getElementById('admin-image-load-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'admin-image-load-styles';
+    style.textContent = `
     .img-loading {
       filter: blur(10px);
       opacity: 0.5;
@@ -18,7 +18,7 @@
       opacity: 1;
     }
   `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 })();
 
 // URL secrète admin (doit correspondre au ADMIN_PATH du serveur)
@@ -880,18 +880,18 @@ function updateOrdersBadge() {
 
 // Toggle et persistence du filtre commandes livrées
 function toggleHideDeliveredOrders() {
-  const checkbox = document.getElementById('hide-delivered');
-  localStorage.setItem('hideDeliveredOrders', checkbox.checked);
-  displayOrders();
+    const checkbox = document.getElementById('hide-delivered');
+    localStorage.setItem('hideDeliveredOrders', checkbox.checked);
+    displayOrders();
 }
 
 // Restaurer l'état de la checkbox commandes au chargement
 function restoreHideDeliveredOrdersState() {
-  const saved = localStorage.getItem('hideDeliveredOrders');
-  const checkbox = document.getElementById('hide-delivered');
-  if (checkbox && saved !== null) {
-    checkbox.checked = saved === 'true';
-  }
+    const saved = localStorage.getItem('hideDeliveredOrders');
+    const checkbox = document.getElementById('hide-delivered');
+    if (checkbox && saved !== null) {
+        checkbox.checked = saved === 'true';
+    }
 }
 
 // Afficher les commandes
@@ -1072,17 +1072,9 @@ async function updateOrderStatus(orderId, newStatus, oldStatus) {
 
 // Enregistrer les paramètres
 async function saveSettings() {
-    const contactEmail = document.getElementById('setting-contact-email').value;
     const perlouzeUrl = document.getElementById('setting-perlouze-url').value;
 
     try {
-        // Sauvegarder l'email de contact
-        await fetch('/api/settings/contact_email', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: contactEmail })
-        });
-
         // Sauvegarder l'URL de La p'tite perlouze
         await fetch('/api/settings/perlouze_url', {
             method: 'PUT',
@@ -1229,18 +1221,18 @@ let allThreads = [];
 
 // Toggle et persistence du filtre conversations closes
 function toggleHideClosedThreads() {
-  const checkbox = document.getElementById('hide-closed-threads');
-  localStorage.setItem('hideClosedThreads', checkbox.checked);
-  loadThreads();
+    const checkbox = document.getElementById('hide-closed-threads');
+    localStorage.setItem('hideClosedThreads', checkbox.checked);
+    loadThreads();
 }
 
 // Restaurer l'état de la checkbox conversations au chargement
 function restoreHideClosedThreadsState() {
-  const saved = localStorage.getItem('hideClosedThreads');
-  const checkbox = document.getElementById('hide-closed-threads');
-  if (checkbox && saved !== null) {
-    checkbox.checked = saved === 'true';
-  }
+    const saved = localStorage.getItem('hideClosedThreads');
+    const checkbox = document.getElementById('hide-closed-threads');
+    if (checkbox && saved !== null) {
+        checkbox.checked = saved === 'true';
+    }
 }
 
 // Charger les threads de conversation
@@ -1506,63 +1498,63 @@ function replyToThread(threadId) {
 
 // Fonction pour compresser une image côté client
 async function compressImageClient(file, maxWidth = 1200, quality = 0.8) {
-  return new Promise((resolve) => {
-    // Si ce n'est pas une image, retourner tel quel
-    if (!file.type.startsWith('image/')) {
-      resolve(file);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        // Redimensionner si nécessaire
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
+    return new Promise((resolve) => {
+        // Si ce n'est pas une image, retourner tel quel
+        if (!file.type.startsWith('image/')) {
+            resolve(file);
+            return;
         }
 
-        canvas.width = width;
-        canvas.height = height;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
 
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+                // Redimensionner si nécessaire
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
 
-        // Convertir en blob WebP
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const compressedFile = new File(
-              [blob],
-              file.name.replace(/\.[^.]+$/, '.webp'),
-              { type: 'image/webp' }
-            );
-            console.log(`🖼️ Compressé: ${(file.size/1024).toFixed(0)}KB → ${(blob.size/1024).toFixed(0)}KB`);
-            resolve(compressedFile);
-          } else {
-            resolve(file);
-          }
-        }, 'image/webp', quality);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convertir en blob WebP
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const compressedFile = new File(
+                            [blob],
+                            file.name.replace(/\.[^.]+$/, '.webp'),
+                            { type: 'image/webp' }
+                        );
+                        console.log(`🖼️ Compressé: ${(file.size / 1024).toFixed(0)}KB → ${(blob.size / 1024).toFixed(0)}KB`);
+                        resolve(compressedFile);
+                    } else {
+                        resolve(file);
+                    }
+                }, 'image/webp', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 // Afficher/masquer le loader overlay
 function showLoader(message = 'Chargement...') {
-  // Supprimer l'ancien loader s'il existe
-  const existingLoader = document.getElementById('overlay-loader');
-  if (existingLoader) existingLoader.remove();
+    // Supprimer l'ancien loader s'il existe
+    const existingLoader = document.getElementById('overlay-loader');
+    if (existingLoader) existingLoader.remove();
 
-  const loader = document.createElement('div');
-  loader.id = 'overlay-loader';
-  loader.innerHTML = `
+    const loader = document.createElement('div');
+    loader.id = 'overlay-loader';
+    loader.innerHTML = `
     <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 999999; display: flex; align-items: center; justify-content: center;">
       <div style="background: white; padding: 2rem 3rem; border-radius: 16px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
         <div style="width: 50px; height: 50px; border: 4px solid #e0e0e0; border-top: 4px solid var(--wood-medium, #8B7355); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
@@ -1576,17 +1568,17 @@ function showLoader(message = 'Chargement...') {
       }
     </style>
   `;
-  document.body.appendChild(loader);
+    document.body.appendChild(loader);
 }
 
 function updateLoaderMessage(message) {
-  const msgEl = document.getElementById('loader-message');
-  if (msgEl) msgEl.textContent = message;
+    const msgEl = document.getElementById('loader-message');
+    if (msgEl) msgEl.textContent = message;
 }
 
 function hideLoader() {
-  const loader = document.getElementById('overlay-loader');
-  if (loader) loader.remove();
+    const loader = document.getElementById('overlay-loader');
+    if (loader) loader.remove();
 }
 
 // Envoyer une réponse
@@ -2134,20 +2126,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Gestion du hash URL pour ouvrir le bon onglet (après init des onglets)
     const hash = window.location.hash.replace('#', '');
     if (hash) {
-      // Mapper les noms possibles vers les noms d'onglets réels
-      const hashMapping = {
-        'contacts': 'messages',
-        'commandes': 'orders',
-        'produits': 'products',
-        'statistiques': 'stats',
-        'parametres': 'settings'
-      };
-      const tabName = hashMapping[hash] || hash;
-      // Activer l'onglet correspondant
-      const tab = document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
-      if (tab) {
-        tab.click();
-      }
+        // Mapper les noms possibles vers les noms d'onglets réels
+        const hashMapping = {
+            'contacts': 'messages',
+            'commandes': 'orders',
+            'produits': 'products',
+            'statistiques': 'stats',
+            'parametres': 'settings'
+        };
+        const tabName = hashMapping[hash] || hash;
+        // Activer l'onglet correspondant
+        const tab = document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
+        if (tab) {
+            tab.click();
+        }
     }
 });
 
