@@ -310,6 +310,7 @@ input[type="checkbox"].theme-checkbox:hover {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -521,6 +522,7 @@ input[type="checkbox"].theme-checkbox:hover {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -531,6 +533,7 @@ input[type="checkbox"].theme-checkbox:hover {
     transform: translateY(50px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -630,10 +633,12 @@ input[type="checkbox"].theme-checkbox:hover {
     opacity: 0.7;
     transform: scale(0.95);
   }
+
   50% {
     opacity: 0.5;
     transform: scale(0.9);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -665,8 +670,9 @@ input[type="checkbox"].theme-checkbox:hover {
   display: flex;
   justify-content: space-between;
   padding: 0.5rem;
-  padding-right: 3.5rem; /* Espace pour éviter le chevauchement avec le badge d'ordre */
-  background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+  padding-right: 3.5rem;
+  /* Espace pour éviter le chevauchement avec le badge d'ordre */
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
   opacity: 0;
   transition: opacity var(--transition-fast);
 }
@@ -724,6 +730,7 @@ input[type="checkbox"].theme-checkbox:hover {
    Responsive Admin
    ==================================== */
 @media (max-width: 768px) {
+
   /* Conteneur principal */
   html {
     overflow-x: hidden;
@@ -782,7 +789,7 @@ input[type="checkbox"].theme-checkbox:hover {
     font-size: 1.5rem;
   }
 
-  .admin-header > div {
+  .admin-header>div {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -867,7 +874,11 @@ input[type="checkbox"].theme-checkbox:hover {
     box-sizing: border-box;
   }
 
-  thead, tbody, th, td, tr {
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
     display: block;
     box-sizing: border-box;
   }
@@ -1063,6 +1074,32 @@ input[type="checkbox"].theme-checkbox:hover {
     font-size: 0.9rem;
     overflow-x: visible;
   }
+
+  /* Boites de catégories sur mobile */
+  #categories-list>div {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  #categories-list>div>div:first-of-type {
+    font-size: 1.5rem;
+  }
+
+  #categories-list>div button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* Types de bois sur mobile */
+  #wood-types-list {
+    gap: 0.5rem;
+  }
+
+  #wood-types-list>span {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
 }
 
 /* ====================================
@@ -1073,6 +1110,7 @@ input[type="checkbox"].theme-checkbox:hover {
     opacity: 0;
     transform: translateX(-50%) translateY(100px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -1084,6 +1122,7 @@ input[type="checkbox"].theme-checkbox:hover {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(-50%) translateY(100px);
@@ -1104,7 +1143,15 @@ button:disabled {
    Animations Skeleton
    ==================================== */
 @keyframes skeletonPulse {
-  0% { opacity: 0.5; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.5; }
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
 }
