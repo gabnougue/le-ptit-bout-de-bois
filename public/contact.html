@@ -86,6 +86,8 @@
                              font-family: inherit;"></textarea>
           </div>
 
+          <div id="form-message" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 600;"></div>
+
           <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
             📨 Envoyer le message
           </button>
@@ -174,6 +176,26 @@
   <script src="/js/modal.js"></script>
   <script src="/js/main.js"></script>
   <script>
+    // Fonction pour afficher le message dans le formulaire
+    function showFormMessage(message, isSuccess) {
+      const formMessage = document.getElementById('form-message');
+      formMessage.textContent = message;
+      formMessage.style.display = 'block';
+      formMessage.style.background = isSuccess ? '#d4edda' : '#f8d7da';
+      formMessage.style.color = isSuccess ? '#155724' : '#721c24';
+      formMessage.style.border = isSuccess ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+      formMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      // Masquer après 5 secondes
+      setTimeout(() => {
+        formMessage.style.opacity = '0';
+        setTimeout(() => {
+          formMessage.style.display = 'none';
+          formMessage.style.opacity = '1';
+        }, 300);
+      }, 5000);
+    }
+
     async function sendMessage(event) {
       event.preventDefault();
 
@@ -203,11 +225,11 @@
 
         // Succès
         form.reset();
-        showSuccess('Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.');
+        showFormMessage('✅ Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.', true);
 
       } catch (error) {
         console.error('Erreur:', error);
-        showError('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+        showFormMessage('❌ Erreur lors de l\'envoi du message. Veuillez réessayer.', false);
       }
     }
 
