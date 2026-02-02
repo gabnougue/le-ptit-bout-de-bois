@@ -50,6 +50,7 @@ if (MAINTENANCE_MODE) {
     // Liste des ressources autorisées
     const allowedAssets = [
       '/logo-large.png',
+      '/ptitboutdebois-maintenance.jpg',
       '/favicon.png',
       '/favicon.ico',
       '/reparer-images.js'
