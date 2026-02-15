@@ -230,6 +230,28 @@
     <div id="tab-settings" class="tab-content">
       <div class="admin-section">
         <h2>Paramètres du site</h2>
+
+        <!-- Changer le mot de passe -->
+        <div style="margin-bottom: 3rem; max-width: 400px;">
+          <h3 style="margin-bottom: 1rem; color: var(--wood-dark);">🔒 Changer le mot de passe</h3>
+          <form id="password-form" onsubmit="changePassword(event)">
+            <div class="form-group">
+              <label>Mot de passe actuel</label>
+              <input type="password" id="current-password" required>
+            </div>
+            <div class="form-group">
+              <label>Nouveau mot de passe</label>
+              <input type="password" id="new-password" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label>Confirmer le nouveau mot de passe</label>
+              <input type="password" id="confirm-password" required minlength="6">
+            </div>
+            <div id="password-message" style="display: none; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+            <button type="submit" class="btn btn-primary">Modifier le mot de passe</button>
+          </form>
+        </div>
+
         <form id="settings-form" style="max-width: 600px;">
           <div class="form-group">
             <label>URL de La p'tite perlouze</label>
