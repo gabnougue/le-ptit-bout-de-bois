@@ -97,11 +97,21 @@ async function initDatabase() {
     });
 
     if (existingAdmin.rows.length === 0) {
-      await client.execute({
-        sql: 'INSERT INTO admins (username, password, email) VALUES (?, ?, ?)',
-        args: [adminUsername, hashedPassword, 'admin@lepetitboutdebois.fr']
-      });
-      console.log('👤 Administrateur créé');
+      // Renommer l'ancien admin "admin" si il existe
+      const oldAdmin = await client.execute("SELECT id FROM admins WHERE username = 'admin'");
+      if (oldAdmin.rows.length > 0) {
+        await client.execute({
+          sql: 'UPDATE admins SET username = ? WHERE username = ?',
+          args: [adminUsername, 'admin']
+        });
+        console.log(`👤 Administrateur renommé en ${adminUsername}`);
+      } else {
+        await client.execute({
+          sql: 'INSERT INTO admins (username, password, email) VALUES (?, ?, ?)',
+          args: [adminUsername, hashedPassword, 'admin@lepetitboutdebois.fr']
+        });
+        console.log('👤 Administrateur créé');
+      }
     } else {
       console.log('👤 Administrateur existant');
     }
