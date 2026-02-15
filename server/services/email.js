@@ -82,7 +82,7 @@ async function sendOrderNotification(order, items) {
               </div>
 
               <div style="text-align: center;">
-                <a href="${adminUrl}" class="button">Voir dans l'admin</a>
+                <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #8b4513; color: #ffffff !important; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; font-size: 14px;">Voir dans l'admin</a>
               </div>
             </div>
             <div class="footer">
@@ -163,7 +163,7 @@ async function sendContactNotification(contact) {
               </div>
 
               <div style="text-align: center;">
-                <a href="${adminUrl}" class="button">Voir dans l'admin</a>
+                <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #8b4513; color: #ffffff !important; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; font-size: 14px;">Voir dans l'admin</a>
               </div>
             </div>
             <div class="footer">
@@ -365,7 +365,7 @@ async function sendNewEmailNotification({ from, subject, message, threadId }) {
               </div>
 
               <div style="text-align: center;">
-                <a href="${adminUrl}" class="button">Répondre dans l'admin</a>
+                <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background: #8b4513; color: #ffffff !important; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; font-size: 14px;">Répondre dans l'admin</a>
               </div>
             </div>
             <div class="footer">
