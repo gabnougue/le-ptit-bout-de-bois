@@ -78,7 +78,7 @@ async function sendOrderNotification(order, items) {
                 <ul class="items-list">
                   ${itemsList}
                 </ul>
-                <p class="total">Total : ${Number(order.total || 0).toFixed(2)}€</p>
+                <p class="total">Total : ${Number(order.total_amount || 0).toFixed(2)}€</p>
               </div>
 
               <div style="text-align: center;">
