@@ -21,7 +21,7 @@ async function sendOrderNotification(order, items) {
 
   try {
     const itemsList = items.map(item =>
-      `<li>${item.product_name} x ${item.quantity} - ${item.price}€</li>`
+      `<li>${item.product_name} x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€</li>`
     ).join('');
 
     const adminUrl = `${SITE_URL}${ADMIN_PATH}/dashboard#commandes`;
@@ -78,7 +78,7 @@ async function sendOrderNotification(order, items) {
                 <ul class="items-list">
                   ${itemsList}
                 </ul>
-                <p class="total">Total : ${order.total}€</p>
+                <p class="total">Total : ${Number(order.total || 0).toFixed(2)}€</p>
               </div>
 
               <div style="text-align: center;">
@@ -190,7 +190,7 @@ async function sendCustomerOrderEmail(order, items, status) {
 
   try {
     const itemsList = items.map(item =>
-      `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.product_name || item.name} x ${item.quantity} - ${item.price}€</li>`
+      `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.product_name || item.name} x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€</li>`
     ).join('');
 
     let subject, title, message, emoji;
@@ -282,7 +282,7 @@ async function sendCustomerOrderEmail(order, items, status) {
                 <ul class="items-list">
                   ${itemsList}
                 </ul>
-                <p class="total">Total : ${order.total_amount}€</p>
+                <p class="total">Total : ${Number(order.total_amount || order.total || 0).toFixed(2)}€</p>
               </div>
 
               <div class="message-box">
