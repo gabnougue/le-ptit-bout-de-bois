@@ -183,7 +183,7 @@ router.get('/wood-types', async (req, res) => {
 
 // Ajouter un type de bois (admin)
 router.post('/wood-types', requireAdmin, async (req, res) => {
-  const { name } = req.body;
+  const { name, description } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Nom de type de bois requis' });
@@ -191,8 +191,8 @@ router.post('/wood-types', requireAdmin, async (req, res) => {
 
   try {
     const result = await db.run(
-      'INSERT INTO wood_types (name) VALUES (?)',
-      [name.trim()]
+      'INSERT INTO wood_types (name, description) VALUES (?, ?)',
+      [name.trim(), description || '']
     );
 
     res.json({
@@ -200,7 +200,8 @@ router.post('/wood-types', requireAdmin, async (req, res) => {
       message: 'Type de bois ajouté',
       woodType: {
         id: result.id,
-        name: name.trim()
+        name: name.trim(),
+        description: description || ''
       }
     });
   } catch (error) {
@@ -208,6 +209,30 @@ router.post('/wood-types', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Ce type de bois existe déjà' });
     }
     console.error('Erreur ajout type de bois:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Modifier un type de bois (admin)
+router.put('/wood-types/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, description } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Nom de type de bois requis' });
+  }
+
+  try {
+    await db.run(
+      'UPDATE wood_types SET name = ?, description = ? WHERE id = ?',
+      [name.trim(), description || '', id]
+    );
+    res.json({ success: true, woodType: { id: parseInt(id), name: name.trim(), description: description || '' } });
+  } catch (error) {
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Ce type de bois existe déjà' });
+    }
+    console.error('Erreur modification type de bois:', error);
     res.status(500).json({ error: error.message });
   }
 });

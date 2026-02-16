@@ -1953,12 +1953,19 @@ function displayWoodTypes() {
     }
 
     container.innerHTML = allWoodTypes.map(woodType => `
-    <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
-                background: var(--wood-light); border-radius: 8px; border: 2px solid var(--wood-medium);">
-      <span style="color: var(--wood-dark); font-weight: 600;">${woodType.name}</span>
-      <button onclick="deleteWoodType(${woodType.id})"
-              style="background: none; border: none; cursor: pointer; color: #991B1B; font-size: 1.2rem; padding: 0; line-height: 1;"
-              title="Supprimer">×</button>
+    <div style="padding: 1rem; background: var(--wood-light); border-radius: 8px; border: 2px solid var(--wood-medium);">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+        <span style="color: var(--wood-dark); font-weight: 600; font-size: 1.05rem;">🪵 ${woodType.name}</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="editWoodType(${woodType.id})"
+                  style="background: none; border: none; cursor: pointer; color: var(--wood-dark); font-size: 1rem; padding: 0.25rem;"
+                  title="Modifier">✏️</button>
+          <button onclick="deleteWoodType(${woodType.id})"
+                  style="background: none; border: none; cursor: pointer; color: #991B1B; font-size: 1rem; padding: 0.25rem;"
+                  title="Supprimer">🗑️</button>
+        </div>
+      </div>
+      ${woodType.description ? `<p style="color: var(--slate-gray); font-size: 0.9rem; margin: 0.5rem 0 0; line-height: 1.4;">${woodType.description}</p>` : '<p style="color: var(--slate-gray); font-size: 0.85rem; margin: 0.5rem 0 0; font-style: italic; opacity: 0.6;">Aucune description</p>'}
     </div>
   `).join('');
 }
@@ -1983,10 +1990,15 @@ function updateWoodTypeSelect() {
     }
 }
 
-// Ajouter un type de bois
+// Variable pour l'édition de type de bois
+let editingWoodTypeId = null;
+
+// Ajouter ou modifier un type de bois
 async function addWoodType() {
     const input = document.getElementById('new-wood-type-input');
+    const descInput = document.getElementById('new-wood-type-description');
     const name = input.value.trim();
+    const description = descInput.value.trim();
 
     if (!name) {
         showError('Veuillez entrer un nom de type de bois');
@@ -1994,25 +2006,58 @@ async function addWoodType() {
     }
 
     try {
-        const response = await fetch('/api/settings/wood-types', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
+        let response;
+        if (editingWoodTypeId) {
+            response = await fetch(`/api/settings/wood-types/${editingWoodTypeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description })
+            });
+        } else {
+            response = await fetch('/api/settings/wood-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description })
+            });
+        }
 
         const data = await response.json();
 
         if (data.success) {
-            showSuccess('Type de bois ajouté');
-            input.value = '';
+            showSuccess(editingWoodTypeId ? 'Type de bois modifié' : 'Type de bois ajouté');
+            cancelEditWoodType();
             loadWoodTypes();
         } else {
             showError('Erreur: ' + data.error);
         }
     } catch (error) {
         console.error('Erreur:', error);
-        showError('Erreur lors de l\'ajout');
+        showError('Erreur lors de l\'opération');
     }
+}
+
+// Passer en mode édition d'un type de bois
+function editWoodType(woodTypeId) {
+    const woodType = allWoodTypes.find(w => w.id === woodTypeId);
+    if (!woodType) return;
+
+    editingWoodTypeId = woodTypeId;
+    document.getElementById('new-wood-type-input').value = woodType.name;
+    document.getElementById('new-wood-type-description').value = woodType.description || '';
+    document.getElementById('wood-type-form-label').textContent = 'Modifier le type de bois';
+    document.getElementById('wood-type-submit-btn').textContent = 'Enregistrer';
+    document.getElementById('wood-type-cancel-btn').style.display = '';
+    document.getElementById('new-wood-type-input').focus();
+}
+
+// Annuler l'édition d'un type de bois
+function cancelEditWoodType() {
+    editingWoodTypeId = null;
+    document.getElementById('new-wood-type-input').value = '';
+    document.getElementById('new-wood-type-description').value = '';
+    document.getElementById('wood-type-form-label').textContent = 'Ajouter un type de bois';
+    document.getElementById('wood-type-submit-btn').textContent = 'Ajouter';
+    document.getElementById('wood-type-cancel-btn').style.display = 'none';
 }
 
 // Supprimer un type de bois

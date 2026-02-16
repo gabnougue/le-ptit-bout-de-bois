@@ -85,6 +85,14 @@ async function initDatabase() {
 
     console.log('✨ Tables créées avec succès');
 
+    // Migration : ajouter colonne description à wood_types
+    try {
+      await client.execute('ALTER TABLE wood_types ADD COLUMN description TEXT');
+      console.log('🪵 Colonne description ajoutée à wood_types');
+    } catch (e) {
+      // La colonne existe déjà
+    }
+
     // Créer l'administrateur par défaut
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || '***MOT_DE_PASSE_RETIRE***';

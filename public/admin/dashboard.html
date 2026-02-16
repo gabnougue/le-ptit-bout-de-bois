@@ -293,23 +293,26 @@
         </div>
 
         <!-- Gestion des types de bois -->
-        <div style="margin-top: 3rem; max-width: 600px;">
-          <h2 style="margin-bottom: 1.5rem;">Types de bois</h2>
+        <div style="margin-top: 3rem; max-width: 800px;">
+          <h2 style="margin-bottom: 1.5rem;">Types de bois et leurs vertus</h2>
 
           <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter un
-              type de bois</label>
-            <div style="display: flex; gap: 0.5rem;">
+            <label id="wood-type-form-label" style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter un type de bois</label>
+            <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
               <input type="text" id="new-wood-type-input" placeholder="Nom du type de bois"
-                style="flex: 1; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
-              <button type="button" onclick="addWoodType()" class="btn btn-primary">Ajouter</button>
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+              <textarea id="new-wood-type-description" placeholder="Description des vertus de ce bois (optionnel)" rows="3"
+                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; resize: vertical; box-sizing: border-box;"></textarea>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" onclick="addWoodType()" id="wood-type-submit-btn" class="btn btn-primary">Ajouter</button>
+                <button type="button" onclick="cancelEditWoodType()" id="wood-type-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
+              </div>
             </div>
           </div>
 
           <div>
-            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Types de bois
-              existants</label>
-            <div id="wood-types-list" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Types de bois existants</label>
+            <div id="wood-types-list" style="display: grid; gap: 0.75rem;">
               <span style="color: var(--slate-gray);">Chargement...</span>
             </div>
           </div>
