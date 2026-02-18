@@ -106,6 +106,10 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
   }
 
   try {
+    // Récupérer l'ancien nom pour mettre à jour les produits
+    const oldCat = await db.get('SELECT name FROM categories WHERE id = ?', [id]);
+    const oldName = oldCat ? oldCat.name : null;
+
     const result = await db.run(
       'UPDATE categories SET name = ?, emoji = ?, description = ? WHERE id = ?',
       [name.trim(), emoji || '🪵', description || '', id]
@@ -113,6 +117,11 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Catégorie non trouvée' });
+    }
+
+    // Mettre à jour la catégorie dans les produits associés
+    if (oldName && oldName !== name.trim()) {
+      await db.run('UPDATE products SET category = ? WHERE category = ?', [name.trim(), oldName]);
     }
 
     res.json({
