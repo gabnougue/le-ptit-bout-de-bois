@@ -231,10 +231,11 @@
       <div class="admin-section">
         <h2>Paramètres du site</h2>
 
-        <!-- Changer le mot de passe -->
+        <!-- Changer le mot de passe (repliable) -->
         <div style="margin-bottom: 3rem; max-width: 400px;">
-          <h3 style="margin-bottom: 1rem; color: var(--wood-dark);">🔒 Changer le mot de passe</h3>
-          <form id="password-form" onsubmit="changePassword(event)">
+          <h3 onclick="const f=document.getElementById('password-form');const a=this.querySelector('.toggle-arrow');if(f.style.display==='none'){f.style.display='block';a.textContent='▾'}else{f.style.display='none';a.textContent='▸'}"
+            style="margin-bottom: 0; color: var(--wood-dark); cursor: pointer; user-select: none;">🔒 Changer le mot de passe <span class="toggle-arrow" style="font-size: 0.9rem;">▸</span></h3>
+          <form id="password-form" onsubmit="changePassword(event)" style="display: none; margin-top: 1rem;">
             <div class="form-group">
               <label>Mot de passe actuel</label>
               <input type="password" id="current-password" required>
@@ -252,13 +253,6 @@
           </form>
         </div>
 
-        <form id="settings-form" style="max-width: 600px;">
-          <div class="form-group">
-            <label>URL de La p'tite perlouze</label>
-            <input type="url" id="setting-perlouze-url" value="https://www.laptiteperlouze.fr">
-          </div>
-          <button type="button" onclick="saveSettings()" class="btn btn-primary">Enregistrer</button>
-        </form>
 
         <!-- Gestion des catégories -->
         <div style="margin-top: 3rem; max-width: 800px;">
