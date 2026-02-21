@@ -71,8 +71,9 @@ function renderCategoryFilters() {
   `;
 
   // Boutons pour chaque catégorie
-  // Filtrer les doublons et trier
-  const uniqueCategories = [...new Set(allCategories)].sort();
+  // Filtrer les doublons, exclure celles sans produits, et trier
+  const categoriesWithProducts = new Set(allProducts.map(p => p.category));
+  const uniqueCategories = [...new Set(allCategories)].filter(c => categoriesWithProducts.has(c)).sort();
 
   uniqueCategories.forEach(category => {
     html += `
@@ -110,8 +111,9 @@ function renderWoodTypeFilters() {
   `;
 
   // Boutons pour chaque type de bois
-  // Filtrer les doublons et trier
-  const uniqueWoodTypes = [...new Set(allWoodTypes)].sort();
+  // Filtrer les doublons, exclure ceux sans produits, et trier
+  const woodTypesWithProducts = new Set(allProducts.map(p => p.wood_type));
+  const uniqueWoodTypes = [...new Set(allWoodTypes)].filter(w => woodTypesWithProducts.has(w)).sort();
 
   uniqueWoodTypes.forEach(woodType => {
     html += `
@@ -162,6 +164,11 @@ async function loadProducts() {
       currentSearch = searchParam;
       document.getElementById('search-input').value = searchParam;
     }
+
+    // Re-rendre les filtres maintenant que les produits sont chargés
+    // (pour exclure les catégories/bois sans produits)
+    renderCategoryFilters();
+    renderWoodTypeFilters();
 
     displayProducts();
   } catch (error) {
