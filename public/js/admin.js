@@ -2110,12 +2110,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Gérer la sélection de nouvelles images
     const imageInput = document.getElementById('product-images');
     if (imageInput) {
-        imageInput.addEventListener('change', (e) => {
+        imageInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if (files.length > 0) {
-                // Ajouter les nouveaux fichiers au tableau existant (accumulation)
-                files.forEach(file => {
-                    newImageFiles.push(file);
+                // Compresser et ajouter les nouveaux fichiers au tableau existant (accumulation)
+                for (const file of files) {
+                    const compressed = await compressImage(file);
+                    newImageFiles.push(compressed);
 
                     // Ajouter aussi à allImagesOrderBoutDeBois
                     if (!window.allImagesOrderBoutDeBois) {
@@ -2123,9 +2124,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     window.allImagesOrderBoutDeBois.push({
                         type: 'new',
-                        data: file
+                        data: compressed
                     });
-                });
+                }
 
                 // Réinitialiser l'input pour permettre de sélectionner à nouveau
                 e.target.value = '';
