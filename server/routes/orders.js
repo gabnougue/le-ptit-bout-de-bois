@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../models/database');
 const { sendOrderNotification, sendCustomerOrderEmail } = require('../services/email');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// TODO: TEMPORAIRE - remettre process.env.STRIPE_SECRET_KEY après test
+const stripe = require('stripe')('sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 
 // Créer une intention de paiement Stripe
 router.post('/create-payment-intent', async (req, res) => {
