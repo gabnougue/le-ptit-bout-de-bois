@@ -962,9 +962,13 @@ function viewOrder(orderId) {
       <div style="margin-top: 1.5rem;">
         <h4 style="color: var(--wood-dark); margin-bottom: 0.5rem;">Articles commandés</h4>
         ${order.items.map(item => `
-          <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--cream);">
-            <span>${item.name} x ${item.quantity}</span>
-            <span style="font-weight: 600;">${(item.price * item.quantity).toFixed(2)} €</span>
+          <div style="display: flex; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--cream); gap: 0.75rem;">
+            ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">` : ''}
+            <div style="flex: 1;">
+              <a href="/produit/${item.id}" target="_blank" style="color: var(--accent-orange); text-decoration: none; font-weight: 600;">${item.name}</a> x ${item.quantity}
+              ${item.wood_type ? `<div style="font-size: 0.8rem; color: var(--wood-medium);">Bois : ${item.wood_type}</div>` : ''}
+            </div>
+            <span style="font-weight: 600; flex-shrink: 0;">${(item.price * item.quantity).toFixed(2)} €</span>
           </div>
         `).join('')}
         <div style="display: flex; justify-content: space-between; padding: 1rem 0.5rem; font-weight: 700; font-size: 1.2rem;">

@@ -20,9 +20,25 @@ async function sendOrderNotification(order, items) {
   }
 
   try {
-    const itemsList = items.map(item =>
-      `<li>${item.product_name} x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€</li>`
-    ).join('');
+    const itemsList = items.map(item => {
+      const imgHtml = item.product_image
+        ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; margin-right: 10px; vertical-align: middle;">`
+        : '';
+      const detailsHtml = item.product_details
+        ? `<br><span style="font-size: 0.85em; color: #888;">${item.product_details}</span>`
+        : '';
+      const linkHtml = item.product_id
+        ? `<a href="${SITE_URL}/produit/${item.product_id}" style="color: #8b4513; text-decoration: none; font-size: 0.85em;">Voir la fiche</a>`
+        : '';
+      return `<li style="padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+        ${imgHtml}
+        <div>
+          <strong>${item.product_name}</strong> x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€
+          ${detailsHtml}
+          ${linkHtml ? `<br>${linkHtml}` : ''}
+        </div>
+      </li>`;
+    }).join('');
 
     const adminUrl = `${SITE_URL}${ADMIN_PATH}/dashboard#commandes`;
 
@@ -189,9 +205,25 @@ async function sendCustomerOrderEmail(order, items, status) {
   }
 
   try {
-    const itemsList = items.map(item =>
-      `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.product_name || item.name} x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€</li>`
-    ).join('');
+    const itemsList = items.map(item => {
+      const name = item.product_name || item.name;
+      const imgHtml = item.product_image
+        ? `<img src="${item.product_image}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; margin-right: 10px; vertical-align: middle;">`
+        : '';
+      const detailsHtml = item.product_details
+        ? `<br><span style="font-size: 0.85em; color: #888;">${item.product_details}</span>`
+        : '';
+      const productLink = item.product_id
+        ? `<a href="${SITE_URL}/produit/${item.product_id}" style="color: #8b4513; text-decoration: none;">${name}</a>`
+        : name;
+      return `<li style="padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+        ${imgHtml}
+        <div>
+          <strong>${productLink}</strong> x ${item.quantity} - ${Number(item.price || 0).toFixed(2)}€
+          ${detailsHtml}
+        </div>
+      </li>`;
+    }).join('');
 
     let subject, title, message, emoji;
 

@@ -79,9 +79,12 @@ router.post('/', async (req, res) => {
     if (order) {
       // Convertir les items pour le format attendu par sendOrderNotification
       const orderItems = items.map(item => ({
+        product_id: item.id,
         product_name: item.name,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        product_image: item.image_url || '',
+        product_details: item.wood_type ? `Bois : ${item.wood_type}` : ''
       }));
 
       // Envoyer l'email de notification au vendeur
@@ -139,8 +142,16 @@ router.patch('/:id/status', async (req, res) => {
     // Récupérer la commande pour envoyer l'email au client
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     if (order) {
-      // Parser les items de la commande
-      const items = JSON.parse(order.items);
+      // Parser les items de la commande et enrichir pour l'email
+      const rawItems = JSON.parse(order.items);
+      const items = rawItems.map(item => ({
+        product_id: item.id,
+        product_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        product_image: item.image_url || '',
+        product_details: item.wood_type ? `Bois : ${item.wood_type}` : ''
+      }));
 
       // Envoyer l'email au client selon le nouveau statut
       await sendCustomerOrderEmail(order, items, status);
