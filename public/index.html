@@ -214,7 +214,7 @@
           return;
         }
 
-        container.innerHTML = categories.map(category => `
+        container.innerHTML = categories.filter(c => !c.parent_id).map(category => `
           <div class="category-card" onclick="window.location.href='/catalogue?category=${encodeURIComponent(category.name)}'"
                style="background: white; border-radius: 12px; padding: 2rem; text-align: center;
                       box-shadow: var(--shadow-medium); cursor: pointer; transition: transform 0.3s ease;
