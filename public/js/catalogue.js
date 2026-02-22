@@ -145,14 +145,19 @@ function renderSubCategoryFilters(parentName) {
     return;
   }
 
-  let html = '';
+  let html = `
+    <div style="width:100%;font-weight:600;color:var(--wood-dark);font-size:0.9rem;margin-bottom:0.25rem;">
+      Sous-catégorie
+    </div>
+  `;
   subs.forEach(sub => {
     const isActive = currentSubCategory === sub.name;
     html += `
       <button class="subcategory-filter-btn" data-subcategory="${sub.name}"
-              style="padding: 0.4rem 0.9rem; border: 2px solid var(--wood-light); border-radius: 8px;
-                     background: ${isActive ? 'var(--wood-light)' : 'white'}; color: var(--wood-dark);
-                     cursor: pointer; font-weight: 500; font-size: 0.9rem;
+              style="padding: 0.5rem 1rem; border: 2px solid var(--wood-medium); border-radius: 8px;
+                     background: ${isActive ? 'var(--wood-medium)' : 'white'};
+                     color: ${isActive ? 'white' : 'var(--wood-medium)'};
+                     cursor: pointer; font-weight: 600;
                      transition: all 0.2s ease;">
         ${sub.name}
       </button>
@@ -472,7 +477,8 @@ function setupSubCategoryFilters() {
       // Mettre à jour l'état actif
       filterButtons.forEach(b => {
         const isActive = b.dataset.subcategory === currentSubCategory;
-        b.style.background = isActive ? 'var(--wood-light)' : 'white';
+        b.style.background = isActive ? 'var(--wood-medium)' : 'white';
+        b.style.color = isActive ? 'white' : 'var(--wood-medium)';
       });
 
       // Mettre à jour l'URL
