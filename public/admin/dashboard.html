@@ -86,6 +86,16 @@
           <button onclick="showAddProductModal()" class="btn btn-primary">+ Ajouter un produit</button>
         </div>
 
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem;">
+          <input type="text" id="product-search" placeholder="Rechercher par nom…" oninput="filterProducts()"
+            style="flex: 1; min-width: 200px; padding: 0.6rem 1rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
+          <select id="product-category-filter" onchange="filterProducts()"
+            style="flex: 0 1 220px; padding: 0.6rem 1rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif;">
+            <option value="">Toutes les catégories</option>
+          </select>
+          <button onclick="resetProductFilters()" class="btn btn-secondary" style="white-space: nowrap;">Réinitialiser</button>
+        </div>
+
         <div class="data-table">
           <table>
             <thead>
@@ -254,6 +264,21 @@
         </div>
 
 
+        <!-- Coups de cœur -->
+        <div style="margin-top: 3rem; max-width: 800px;">
+          <h2 style="margin-bottom: 0.5rem;">⭐ Coups de cœur</h2>
+          <p style="color: var(--slate-gray); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Choisissez jusqu'à <strong>3 articles</strong> mis en avant sur la page d'accueil.
+          </p>
+          <div style="margin-bottom: 1.5rem;">
+            <button onclick="openFeaturedPicker()" id="featured-add-btn" class="btn btn-primary">Choisir un article ⭐</button>
+          </div>
+          <p style="color: var(--wood-dark); font-weight: 600; margin-bottom: 0.75rem;">Actuellement mis en avant :</p>
+          <div id="featured-list" style="display: grid; gap: 0.75rem; min-height: 50px; padding: 1rem; background: var(--cream); border-radius: 8px; border: 2px solid var(--wood-light);">
+            <span style="color: var(--slate-gray); font-style: italic;">Chargement…</span>
+          </div>
+        </div>
+
         <!-- Gestion des catégories -->
         <div style="margin-top: 3rem; max-width: 800px;">
           <h2 style="margin-bottom: 1.5rem;">Catégories de produits</h2>
@@ -311,6 +336,20 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal sélection coup de cœur -->
+  <div id="featured-picker-modal" class="modal" onclick="if(event.target===this)closeFeaturedPicker()">
+    <div class="modal-content" style="max-width: 850px; width: 90%;">
+      <div class="modal-header">
+        <h3>Choisir un article</h3>
+        <button class="modal-close" onclick="closeFeaturedPicker()">×</button>
+      </div>
+      <input type="text" id="featured-picker-search" placeholder="Rechercher par nom…" oninput="filterFeaturedPicker()"
+        style="width: 100%; margin-bottom: 1.25rem; padding: 0.75rem 1rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+      <div id="featured-picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; max-height: 60vh; overflow-y: auto;">
       </div>
     </div>
   </div>

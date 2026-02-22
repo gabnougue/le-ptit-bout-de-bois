@@ -236,10 +236,9 @@
     // Charger les produits phares
     async function loadFeaturedProducts() {
       try {
-        const response = await fetch('/api/products');
+        const response = await fetch('/api/products/featured');
         const products = await response.json();
 
-        // Afficher les 3 premiers produits
         const featuredProducts = products.slice(0, 3);
         const container = document.getElementById('featured-products');
 

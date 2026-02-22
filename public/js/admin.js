@@ -142,23 +142,56 @@ async function loadProducts() {
     try {
         const response = await fetch('/api/admin/products');
         allProducts = await response.json();
-        displayProducts();
+        populateCategoryFilter();
+        filterProducts();
     } catch (error) {
         console.error('Erreur chargement produits:', error);
     }
 }
 
+// Peupler le filtre catégories
+function populateCategoryFilter() {
+    const select = document.getElementById('product-category-filter');
+    if (!select) return;
+    const current = select.value;
+    const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Toutes les catégories</option>'
+        + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    select.value = current;
+}
+
+// Filtrer et afficher les produits
+function filterProducts() {
+    const search = (document.getElementById('product-search')?.value || '').toLowerCase().trim();
+    const category = document.getElementById('product-category-filter')?.value || '';
+    const filtered = allProducts.filter(p => {
+        const matchName = !search || p.name.toLowerCase().includes(search);
+        const matchCat = !category || p.category === category;
+        return matchName && matchCat;
+    });
+    displayProducts(filtered);
+}
+
+// Réinitialiser les filtres
+function resetProductFilters() {
+    const s = document.getElementById('product-search');
+    const c = document.getElementById('product-category-filter');
+    if (s) s.value = '';
+    if (c) c.value = '';
+    filterProducts();
+}
+
 // Afficher les produits
-function displayProducts() {
+function displayProducts(products) {
+    if (products === undefined) products = allProducts;
     const tbody = document.getElementById('products-table-body');
 
-    if (allProducts.length === 0) {
+    if (products.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Aucun produit</td></tr>';
         return;
     }
 
-    tbody.innerHTML = allProducts.map(product => {
-        // Utiliser la première image du tableau images, ou image_url en fallback
+    tbody.innerHTML = products.map(product => {
         const imageUrl = (product.images && product.images.length > 0)
             ? product.images[0].image_path
             : (product.image_url || '/images/placeholder.jpg');
@@ -2110,6 +2143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadThreads();
     loadCategories();
     loadWoodTypes();
+    loadFeaturedAdmin();
 
     // Gérer la sélection de nouvelles images
     const imageInput = document.getElementById('product-images');
@@ -2695,5 +2729,136 @@ async function changePassword(e) {
     msgEl.style.color = '#DC2626';
     msgEl.textContent = 'Erreur de connexion au serveur.';
   }
+}
+
+// ═══════════════════════════════════════════════════
+// COUPS DE CŒUR
+// ═══════════════════════════════════════════════════
+
+let _pickerProductsBdB = [];
+
+function _getImageSrcBdB(p) {
+    if (p.images && p.images.length > 0) {
+        const img = p.images[0];
+        return img.image_path.startsWith('https://') ? img.image_path : `/images/uploads/${img.image_path}`;
+    }
+    if (p.image_url) return p.image_url.startsWith('https://') ? p.image_url : `/images/uploads/${p.image_url}`;
+    return '/images/placeholder.jpg';
+}
+
+async function loadFeaturedAdmin() {
+    try {
+        const response = await fetch('/api/admin/products');
+        const products = await response.json();
+
+        const featured = products.filter(p => p.is_featured);
+        _pickerProductsBdB = products.filter(p => !p.is_featured);
+
+        const addBtn = document.getElementById('featured-add-btn');
+        if (addBtn) {
+            addBtn.disabled = featured.length >= 3;
+            addBtn.style.opacity = featured.length >= 3 ? '0.5' : '1';
+        }
+
+        const list = document.getElementById('featured-list');
+        if (!list) return;
+
+        if (featured.length === 0) {
+            list.innerHTML = '<span style="color: var(--slate-gray); font-style: italic;">Aucun coup de cœur sélectionné — les 3 articles les plus récents s\'affichent par défaut.</span>';
+            return;
+        }
+
+        list.innerHTML = featured.map(p => `
+            <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: white; border-radius: 8px; border: 2px solid var(--wood-light);">
+                <img src="${_getImageSrcBdB(p)}" alt="${p.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; color: var(--wood-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</div>
+                    <div style="font-size: 0.85rem; color: var(--slate-gray);">${p.wood_type ? p.wood_type + ' · ' : ''}${p.category}</div>
+                </div>
+                <button onclick="removeFeaturedProduct(${p.id})"
+                    style="background: #DC2626; color: white; border: none; padding: 0.4rem; border-radius: 6px; cursor: pointer; font-weight: 600; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;"
+                    title="Retirer des coups de cœur">✕</button>
+            </div>`).join('');
+    } catch (error) {
+        console.error('Erreur chargement coups de cœur:', error);
+    }
+}
+
+function openFeaturedPicker() {
+    document.getElementById('featured-picker-search').value = '';
+    renderPickerGridBdB(_pickerProductsBdB);
+    document.getElementById('featured-picker-modal').classList.add('active');
+}
+
+function closeFeaturedPicker() {
+    document.getElementById('featured-picker-modal').classList.remove('active');
+}
+
+function filterFeaturedPicker() {
+    const q = document.getElementById('featured-picker-search').value.toLowerCase().trim();
+    const filtered = q ? _pickerProductsBdB.filter(p => p.name.toLowerCase().includes(q)) : _pickerProductsBdB;
+    renderPickerGridBdB(filtered);
+}
+
+function renderPickerGridBdB(products) {
+    const grid = document.getElementById('featured-picker-grid');
+    if (products.length === 0) {
+        grid.innerHTML = '<p style="color: var(--slate-gray); font-style: italic; grid-column: 1/-1;">Aucun article trouvé.</p>';
+        return;
+    }
+    grid.innerHTML = products.map(p => `
+        <div onclick="addFeaturedProduct(${p.id})"
+            style="cursor: pointer; border-radius: 10px; border: 2px solid var(--wood-light); overflow: hidden; transition: box-shadow 0.2s, transform 0.2s; background: white;"
+            onmouseover="this.style.boxShadow='0 6px 20px rgba(74,44,31,0.2)';this.style.transform='translateY(-3px)'"
+            onmouseout="this.style.boxShadow='none';this.style.transform='none'">
+            <img src="${_getImageSrcBdB(p)}" alt="${p.name}"
+                style="width: 100%; height: 130px; object-fit: cover; display: block;">
+            <div style="padding: 0.6rem 0.75rem;">
+                <div style="font-weight: 600; color: var(--wood-dark); font-size: 0.9rem; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</div>
+                <div style="font-size: 0.78rem; color: var(--slate-gray); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.wood_type || ''}</div>
+                <div style="font-size: 0.78rem; color: var(--slate-gray);">${p.category}</div>
+            </div>
+        </div>`).join('');
+}
+
+async function addFeaturedProduct(id) {
+    try {
+        const response = await fetch(`/api/admin/products/${id}/featured`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ featured: true })
+        });
+        const result = await response.json();
+        if (result.success) {
+            closeFeaturedPicker();
+            showSuccess('Article ajouté aux coups de cœur');
+            loadFeaturedAdmin();
+        } else {
+            showError(result.error || 'Erreur');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showError('Erreur lors de la mise à jour');
+    }
+}
+
+async function removeFeaturedProduct(id) {
+    try {
+        const response = await fetch(`/api/admin/products/${id}/featured`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ featured: false })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showSuccess('Article retiré des coups de cœur');
+            loadFeaturedAdmin();
+        } else {
+            showError(result.error || 'Erreur');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showError('Erreur lors de la mise à jour');
+    }
 }
 

@@ -66,6 +66,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Récupérer les produits coups de cœur (page d'accueil)
+router.get('/featured', async (req, res) => {
+  try {
+    let products = await db.all(
+      'SELECT * FROM products WHERE is_featured = 1 AND stock > 0 LIMIT 3'
+    );
+    // Fallback : les 3 plus récents si aucun coup de cœur défini
+    if (products.length === 0) {
+      products = await db.all(
+        'SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 3'
+      );
+    }
+    const enrichedProducts = await enrichProducts(products);
+    res.json(enrichedProducts);
+  } catch (error) {
+    console.error('Erreur récupération produits phares:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Récupérer un produit par ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
