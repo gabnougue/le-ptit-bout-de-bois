@@ -238,34 +238,10 @@
 
     <!-- Contenu: Paramètres -->
     <div id="tab-settings" class="tab-content">
-      <div class="admin-section">
-        <h2>Paramètres du site</h2>
-
-        <!-- Changer le mot de passe (repliable) -->
-        <div style="margin-bottom: 3rem; max-width: 400px;">
-          <h3 onclick="const f=document.getElementById('password-form');const a=this.querySelector('.toggle-arrow');if(f.style.display==='none'){f.style.display='block';a.textContent='▾'}else{f.style.display='none';a.textContent='▸'}"
-            style="margin-bottom: 0; color: var(--wood-dark); cursor: pointer; user-select: none;">🔒 Changer le mot de passe <span class="toggle-arrow" style="font-size: 0.9rem;">▸</span></h3>
-          <form id="password-form" onsubmit="changePassword(event)" style="display: none; margin-top: 1rem;">
-            <div class="form-group">
-              <label>Mot de passe actuel</label>
-              <input type="password" id="current-password" required>
-            </div>
-            <div class="form-group">
-              <label>Nouveau mot de passe</label>
-              <input type="password" id="new-password" required minlength="6">
-            </div>
-            <div class="form-group">
-              <label>Confirmer le nouveau mot de passe</label>
-              <input type="password" id="confirm-password" required minlength="6">
-            </div>
-            <div id="password-message" style="display: none; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;"></div>
-            <button type="submit" class="btn btn-primary">Modifier le mot de passe</button>
-          </form>
-        </div>
-
+      <div style="display: grid; gap: 1.5rem; max-width: 800px;">
 
         <!-- Coups de cœur -->
-        <div style="margin-top: 3rem; max-width: 800px;">
+        <div class="admin-section">
           <h2 style="margin-bottom: 0.5rem;">⭐ Coups de cœur</h2>
           <p style="color: var(--slate-gray); font-size: 0.9rem; margin-bottom: 1.5rem;">
             Choisissez jusqu'à <strong>3 articles</strong> mis en avant sur la page d'accueil.
@@ -280,12 +256,11 @@
         </div>
 
         <!-- Gestion des catégories -->
-        <div style="margin-top: 3rem; max-width: 800px;">
-          <h2 style="margin-bottom: 1.5rem;">Catégories de produits</h2>
+        <div class="admin-section">
+          <h2 style="margin-bottom: 1.5rem;">🗂️ Catégories de produits</h2>
 
           <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter une
-              catégorie</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter une catégorie</label>
             <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
               <input type="text" id="new-category-input" placeholder="Nom de la catégorie"
                 style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
@@ -298,17 +273,14 @@
                 <option value="">— Catégorie principale (pas de parent) —</option>
               </select>
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button type="button" onclick="addCategory()" id="category-submit-btn" class="btn btn-primary">Ajouter
-                  la catégorie</button>
-                <button type="button" onclick="cancelEditCategory()" id="category-cancel-btn" class="btn btn-secondary"
-                  style="display: none;">Annuler</button>
+                <button type="button" onclick="addCategory()" id="category-submit-btn" class="btn btn-primary">Ajouter la catégorie</button>
+                <button type="button" onclick="cancelEditCategory()" id="category-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
               </div>
             </div>
           </div>
 
           <div>
-            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Catégories
-              existantes</label>
+            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Catégories existantes</label>
             <div id="categories-list" style="display: grid; gap: 0.75rem;">
               <span style="color: var(--slate-gray);">Chargement...</span>
             </div>
@@ -316,8 +288,8 @@
         </div>
 
         <!-- Gestion des types de bois -->
-        <div style="margin-top: 3rem; max-width: 800px;">
-          <h2 style="margin-bottom: 1.5rem;">Types de bois et leurs vertus</h2>
+        <div class="admin-section">
+          <h2 style="margin-bottom: 1.5rem;">🪵 Types de bois et leurs vertus</h2>
 
           <div style="margin-bottom: 1.5rem;">
             <label id="wood-type-form-label" style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter un type de bois</label>
@@ -340,6 +312,33 @@
             </div>
           </div>
         </div>
+
+        <!-- Changer le mot de passe -->
+        <div class="admin-section">
+          <div onclick="togglePasswordSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <h2 style="margin: 0;">🔒 Changer le mot de passe</h2>
+            <span id="password-chevron" style="font-size: 1.2rem; color: var(--wood-medium); transition: transform 0.3s ease; transform: rotate(0deg);">▶</span>
+          </div>
+          <div id="password-collapsible" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease;">
+            <form id="password-form" onsubmit="changePassword(event)" style="margin-top: 1.5rem; max-width: 400px;">
+              <div class="form-group">
+                <label>Mot de passe actuel</label>
+                <input type="password" id="current-password" required>
+              </div>
+              <div class="form-group">
+                <label>Nouveau mot de passe</label>
+                <input type="password" id="new-password" required minlength="6">
+              </div>
+              <div class="form-group">
+                <label>Confirmer le nouveau mot de passe</label>
+                <input type="password" id="confirm-password" required minlength="6">
+              </div>
+              <div id="password-message" style="display: none; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+              <button type="submit" class="btn btn-primary">Modifier le mot de passe</button>
+            </form>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
