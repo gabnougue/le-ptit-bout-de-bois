@@ -6,6 +6,7 @@ let allProducts = [];
 let allCategories = [];
 let allWoodTypes = [];
 let currentCategory = 'all';
+let currentSubCategory = 'all';
 let currentWoodType = 'all';
 let currentSearch = '';
 let currentMaxPrice = 100;
@@ -17,10 +18,8 @@ async function loadCategories() {
     const response = await fetch('/api/settings/categories');
     const categoriesData = await response.json();
 
-    // Normaliser les données (si c'est un tableau d'objets ou de strings)
-    // L'API settings renvoie des objets {id, name, ...}
-    // L'API products renvoyait des strings ["nom", ...]
-    allCategories = categoriesData.map(c => typeof c === 'object' ? c.name : c);
+    // Garder les objets complets {id, name, parent_id, ...} pour gérer les sous-catégories
+    allCategories = categoriesData.map(c => typeof c === 'object' ? c : { id: null, name: c, parent_id: null });
 
     renderCategoryFilters();
   } catch (error) {
@@ -28,7 +27,8 @@ async function loadCategories() {
     // Fallback sur l'API products si settings échoue
     try {
       const resp = await fetch('/api/products/meta/categories');
-      allCategories = await resp.json();
+      const fallbackData = await resp.json();
+      allCategories = fallbackData.map(c => typeof c === 'object' ? c : { id: null, name: c, parent_id: null });
       renderCategoryFilters();
     } catch (e) { console.error('Erreur fallback catégories:', e); }
   }
@@ -55,7 +55,7 @@ async function loadWoodTypes() {
   }
 }
 
-// Générer les boutons de filtres de catégories
+// Générer les boutons de filtres de catégories (niveau 1 — parents uniquement)
 function renderCategoryFilters() {
   const container = document.getElementById('category-filters');
   if (!container) return;
@@ -70,18 +70,30 @@ function renderCategoryFilters() {
     </button>
   `;
 
-  // Boutons pour chaque catégorie
-  // Filtrer les doublons, exclure celles sans produits, et trier
-  const categoriesWithProducts = new Set(allProducts.map(p => p.category));
-  const uniqueCategories = [...new Set(allCategories)].filter(c => categoriesWithProducts.has(c)).sort();
+  // Noms des sous-catégories (pour inclure les produits qui utilisent une sous-cat dans le filtre parent)
+  const childNames = new Set(allCategories.filter(c => c.parent_id).map(c => c.name));
 
-  uniqueCategories.forEach(category => {
+  // Catégories dont les produits sont présents (directement ou via sous-catégorie)
+  const categoriesWithProducts = new Set(allProducts.map(p => p.category));
+
+  // Afficher uniquement les catégories parentes (sans parent_id)
+  const parentCategories = allCategories
+    .filter(c => !c.parent_id)
+    .filter(c => {
+      // Garder si des produits sont dans cette catégorie OU dans une de ses sous-catégories
+      if (categoriesWithProducts.has(c.name)) return true;
+      const mySubs = allCategories.filter(sub => sub.parent_id === c.id).map(sub => sub.name);
+      return mySubs.some(sub => categoriesWithProducts.has(sub));
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  parentCategories.forEach(cat => {
     html += `
-      <button class="category-filter-btn" data-category="${category}"
+      <button class="category-filter-btn" data-category="${cat.name}"
               style="padding: 0.5rem 1rem; border: 2px solid var(--wood-medium); border-radius: 8px;
                      background: white; color: var(--wood-medium); cursor: pointer; font-weight: 600;
                      transition: all 0.2s ease;">
-        ${category}
+        ${cat.name}
       </button>
     `;
   });
@@ -93,6 +105,64 @@ function renderCategoryFilters() {
 
   // Mettre à jour l'état actif selon la catégorie courante
   updateFilterButtons();
+
+  // Afficher les sous-catégories si une catégorie était déjà sélectionnée
+  if (currentCategory !== 'all') {
+    renderSubCategoryFilters(currentCategory);
+  }
+}
+
+// Générer les boutons de filtres de sous-catégories
+function renderSubCategoryFilters(parentName) {
+  let subContainer = document.getElementById('subcategory-filters');
+
+  // Créer le container si nécessaire
+  const catContainer = document.getElementById('category-filters');
+  if (!subContainer && catContainer) {
+    subContainer = document.createElement('div');
+    subContainer.id = 'subcategory-filters';
+    subContainer.style.cssText = 'display:none;margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.5rem;';
+    catContainer.parentNode.insertBefore(subContainer, catContainer.nextSibling);
+  }
+  if (!subContainer) return;
+
+  // Trouver la catégorie parente pour obtenir son id
+  const parentCat = allCategories.find(c => c.name === parentName && !c.parent_id);
+  if (!parentCat) {
+    subContainer.style.display = 'none';
+    return;
+  }
+
+  // Trouver les sous-catégories
+  const categoriesWithProducts = new Set(allProducts.map(p => p.category));
+  const subs = allCategories
+    .filter(c => c.parent_id === parentCat.id)
+    .filter(c => categoriesWithProducts.has(c.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (subs.length === 0) {
+    subContainer.style.display = 'none';
+    return;
+  }
+
+  let html = '';
+  subs.forEach(sub => {
+    const isActive = currentSubCategory === sub.name;
+    html += `
+      <button class="subcategory-filter-btn" data-subcategory="${sub.name}"
+              style="padding: 0.4rem 0.9rem; border: 2px solid var(--wood-light); border-radius: 8px;
+                     background: ${isActive ? 'var(--wood-light)' : 'white'}; color: var(--wood-dark);
+                     cursor: pointer; font-weight: 500; font-size: 0.9rem;
+                     transition: all 0.2s ease;">
+        ${sub.name}
+      </button>
+    `;
+  });
+
+  subContainer.innerHTML = html;
+  subContainer.style.display = 'flex';
+
+  setupSubCategoryFilters();
 }
 
 // Générer les boutons de filtres de types de bois
@@ -147,12 +217,17 @@ async function loadProducts() {
     // Vérifier les paramètres URL
     const urlParams = new URLSearchParams(window.location.search);
     const categoryParam = urlParams.get('category');
+    const subcategoryParam = urlParams.get('subcategory');
     const woodTypeParam = urlParams.get('woodType');
     const searchParam = urlParams.get('search');
 
     if (categoryParam) {
       currentCategory = categoryParam;
       updateFilterButtons();
+    }
+
+    if (subcategoryParam) {
+      currentSubCategory = subcategoryParam;
     }
 
     if (woodTypeParam) {
@@ -231,9 +306,18 @@ function displayProducts() {
   // Filtrer les produits
   let filteredProducts = allProducts;
 
-  // Filtre par catégorie
-  if (currentCategory !== 'all') {
-    filteredProducts = filteredProducts.filter(p => p.category === currentCategory);
+  // Filtre par catégorie / sous-catégorie
+  if (currentSubCategory !== 'all') {
+    filteredProducts = filteredProducts.filter(p => p.category === currentSubCategory);
+  } else if (currentCategory !== 'all') {
+    // Inclure les produits de la catégorie parente + tous ceux de ses sous-catégories
+    const parentCat = allCategories.find(c => c.name === currentCategory && !c.parent_id);
+    const childNames = parentCat
+      ? allCategories.filter(c => c.parent_id === parentCat.id).map(c => c.name)
+      : [];
+    filteredProducts = filteredProducts.filter(p =>
+      p.category === currentCategory || childNames.includes(p.category)
+    );
   }
 
   // Filtre par type de bois
@@ -347,15 +431,56 @@ function setupCategoryFilters() {
       btn.style.background = 'var(--wood-medium)';
       btn.style.color = 'white';
 
-      // Mettre à jour la catégorie
+      // Mettre à jour la catégorie et réinitialiser la sous-catégorie
       currentCategory = btn.dataset.category;
+      currentSubCategory = 'all';
 
       // Mettre à jour l'URL
       const url = new URL(window.location);
       if (currentCategory === 'all') {
         url.searchParams.delete('category');
+        url.searchParams.delete('subcategory');
+        const subContainer = document.getElementById('subcategory-filters');
+        if (subContainer) subContainer.style.display = 'none';
       } else {
         url.searchParams.set('category', currentCategory);
+        url.searchParams.delete('subcategory');
+        renderSubCategoryFilters(currentCategory);
+      }
+      window.history.pushState({}, '', url);
+
+      // Réafficher les produits
+      displayProducts();
+    });
+  });
+}
+
+// Gestion des filtres de sous-catégories
+function setupSubCategoryFilters() {
+  const filterButtons = document.querySelectorAll('.subcategory-filter-btn');
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Toggle : cliquer sur la sous-cat active la désélectionne
+      const clickedSub = btn.dataset.subcategory;
+      if (currentSubCategory === clickedSub) {
+        currentSubCategory = 'all';
+      } else {
+        currentSubCategory = clickedSub;
+      }
+
+      // Mettre à jour l'état actif
+      filterButtons.forEach(b => {
+        const isActive = b.dataset.subcategory === currentSubCategory;
+        b.style.background = isActive ? 'var(--wood-light)' : 'white';
+      });
+
+      // Mettre à jour l'URL
+      const url = new URL(window.location);
+      if (currentSubCategory === 'all') {
+        url.searchParams.delete('subcategory');
+      } else {
+        url.searchParams.set('subcategory', currentSubCategory);
       }
       window.history.pushState({}, '', url);
 
@@ -486,8 +611,11 @@ function showError(message) {
 
 // Réinitialiser les filtres
 function resetFilters() {
-  // Réinitialiser la catégorie
+  // Réinitialiser la catégorie et sous-catégorie
   currentCategory = 'all';
+  currentSubCategory = 'all';
+  const subContainer = document.getElementById('subcategory-filters');
+  if (subContainer) subContainer.style.display = 'none';
 
   // Réinitialiser le type de bois
   currentWoodType = 'all';

@@ -1759,12 +1759,13 @@ async function loadCategories() {
         allCategories = await response.json();
         displayCategories();
         updateCategorySelect();
+        updateParentCategorySelect();
     } catch (error) {
         console.error('Erreur chargement catégories:', error);
     }
 }
 
-// Afficher les catégories
+// Afficher les catégories (parents + sous-catégories indentées)
 function displayCategories() {
     const container = document.getElementById('categories-list');
 
@@ -1773,18 +1774,26 @@ function displayCategories() {
         return;
     }
 
-    container.innerHTML = allCategories.map(cat => `
+    const parents = allCategories.filter(c => !c.parent_id);
+    const children = allCategories.filter(c => c.parent_id);
+
+    function renderCatCard(cat, isChild) {
+        const indent = isChild ? 'margin-left: 1.5rem; border-left: 3px solid var(--wood-light);' : '';
+        const badge = isChild
+            ? `<span style="font-size:0.75rem;background:var(--wood-light);color:var(--wood-dark);padding:0.1rem 0.5rem;border-radius:6px;margin-left:0.5rem;">sous-cat</span>`
+            : '';
+        return `
     <div style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem;
-                background: white; border: 2px solid var(--wood-light); border-radius: 12px;">
+                background: white; border: 2px solid var(--wood-light); border-radius: 12px; ${indent}">
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <div style="font-size: 1.5rem;">${cat.emoji || '🪵'}</div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 600; color: var(--wood-dark); word-break: break-word;">${cat.name}</div>
+          <div style="font-weight: 600; color: var(--wood-dark); word-break: break-word;">${cat.name}${badge}</div>
           <div style="font-size: 0.85rem; color: var(--slate-gray); word-break: break-word;">${cat.description || ''}</div>
         </div>
       </div>
       <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-        <button onclick="editCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', '${(cat.emoji || '🪵').replace(/'/g, "\\'")}', '${(cat.description || '').replace(/'/g, "\\'")}')"
+        <button onclick="editCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', '${(cat.emoji || '🪵').replace(/'/g, "\\'")}', '${(cat.description || '').replace(/'/g, "\\'")}', ${cat.parent_id || 'null'})"
                 class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
           Modifier
         </button>
@@ -1798,18 +1807,67 @@ function displayCategories() {
           ✕
         </button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+    }
+
+    let html = '';
+    parents.forEach(parent => {
+        html += renderCatCard(parent, false);
+        const subs = children.filter(c => c.parent_id === parent.id);
+        subs.forEach(sub => {
+            html += renderCatCard(sub, true);
+        });
+    });
+    // Afficher aussi les enfants dont le parent n'existe plus (orphelins)
+    const parentIds = new Set(parents.map(p => p.id));
+    children.filter(c => !parentIds.has(c.parent_id)).forEach(orphan => {
+        html += renderCatCard(orphan, false);
+    });
+
+    container.innerHTML = html;
 }
 
-// Mettre à jour le select de catégories dans le formulaire produit
+// Mettre à jour le select de catégories dans le formulaire produit (avec optgroups)
 function updateCategorySelect() {
     const select = document.getElementById('product-category');
     if (!select) return;
 
-    select.innerHTML = allCategories.map(cat =>
-        `<option value="${cat.name}">${cat.name}</option>`
-    ).join('');
+    const parents = allCategories.filter(c => !c.parent_id);
+    const children = allCategories.filter(c => c.parent_id);
+    const parentIds = new Set(parents.map(p => p.id));
+
+    let html = '';
+    parents.forEach(parent => {
+        const subs = children.filter(c => c.parent_id === parent.id);
+        if (subs.length > 0) {
+            html += `<optgroup label="${parent.name}">`;
+            subs.forEach(sub => {
+                html += `<option value="${sub.name}">${sub.name}</option>`;
+            });
+            html += `</optgroup>`;
+        } else {
+            html += `<option value="${parent.name}">${parent.name}</option>`;
+        }
+    });
+    // Orphelins
+    children.filter(c => !parentIds.has(c.parent_id)).forEach(orphan => {
+        html += `<option value="${orphan.name}">${orphan.name}</option>`;
+    });
+
+    select.innerHTML = html;
+}
+
+// Mettre à jour le select de catégories parentes (pour le formulaire d'ajout/édition catégorie)
+function updateParentCategorySelect() {
+    const select = document.getElementById('new-category-parent');
+    if (!select) return;
+
+    const parents = allCategories.filter(c => !c.parent_id);
+    let html = '<option value="">— Catégorie principale (pas de parent) —</option>';
+    parents.forEach(cat => {
+        html += `<option value="${cat.id}">${cat.name}</option>`;
+    });
+    select.innerHTML = html;
 }
 
 // Ajouter une catégorie
@@ -1817,10 +1875,12 @@ async function addCategory() {
     const nameInput = document.getElementById('new-category-input');
     const emojiInput = document.getElementById('new-category-emoji');
     const descriptionInput = document.getElementById('new-category-description');
+    const parentSelect = document.getElementById('new-category-parent');
 
     const name = nameInput.value.trim();
     const emoji = emojiInput.value.trim() || '🪵';
     const description = descriptionInput.value.trim();
+    const parent_id = parentSelect && parentSelect.value ? parseInt(parentSelect.value) : null;
 
     if (!name) {
         showError('Veuillez entrer un nom de catégorie');
@@ -1831,7 +1891,7 @@ async function addCategory() {
         const response = await fetch('/api/settings/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, emoji, description })
+            body: JSON.stringify({ name, emoji, description, parent_id })
         });
 
         const data = await response.json();
@@ -1841,6 +1901,7 @@ async function addCategory() {
             nameInput.value = '';
             emojiInput.value = '';
             descriptionInput.value = '';
+            if (parentSelect) parentSelect.value = '';
             loadCategories();
         } else {
             showError('Erreur: ' + data.error);
@@ -1856,6 +1917,7 @@ function cancelEditCategory() {
     const nameInput = document.getElementById('new-category-input');
     const emojiInput = document.getElementById('new-category-emoji');
     const descriptionInput = document.getElementById('new-category-description');
+    const parentSelect = document.getElementById('new-category-parent');
     const submitButton = document.getElementById('category-submit-btn');
     const cancelButton = document.getElementById('category-cancel-btn');
 
@@ -1863,6 +1925,7 @@ function cancelEditCategory() {
     nameInput.value = '';
     emojiInput.value = '';
     descriptionInput.value = '';
+    if (parentSelect) parentSelect.value = '';
 
     // Remettre le bouton en mode "Ajouter"
     submitButton.textContent = 'Ajouter la catégorie';
@@ -1873,10 +1936,11 @@ function cancelEditCategory() {
 }
 
 // Modifier une catégorie
-async function editCategory(id, currentName, currentEmoji, currentDescription) {
+async function editCategory(id, currentName, currentEmoji, currentDescription, currentParentId) {
     const nameInput = document.getElementById('new-category-input');
     const emojiInput = document.getElementById('new-category-emoji');
     const descriptionInput = document.getElementById('new-category-description');
+    const parentSelect = document.getElementById('new-category-parent');
     const submitButton = document.getElementById('category-submit-btn');
     const cancelButton = document.getElementById('category-cancel-btn');
 
@@ -1884,6 +1948,7 @@ async function editCategory(id, currentName, currentEmoji, currentDescription) {
     nameInput.value = currentName;
     emojiInput.value = currentEmoji;
     descriptionInput.value = currentDescription;
+    if (parentSelect) parentSelect.value = currentParentId || '';
 
     // Afficher le bouton annuler
     cancelButton.style.display = 'block';
@@ -1894,6 +1959,7 @@ async function editCategory(id, currentName, currentEmoji, currentDescription) {
         const name = nameInput.value.trim();
         const emoji = emojiInput.value.trim() || '🪵';
         const description = descriptionInput.value.trim();
+        const parent_id = parentSelect && parentSelect.value ? parseInt(parentSelect.value) : null;
 
         if (!name) {
             showError('Veuillez entrer un nom de catégorie');
@@ -1904,7 +1970,7 @@ async function editCategory(id, currentName, currentEmoji, currentDescription) {
             const response = await fetch(`/api/settings/categories/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, emoji, description })
+                body: JSON.stringify({ name, emoji, description, parent_id })
             });
 
             const data = await response.json();
@@ -1914,6 +1980,7 @@ async function editCategory(id, currentName, currentEmoji, currentDescription) {
                 nameInput.value = '';
                 emojiInput.value = '';
                 descriptionInput.value = '';
+                if (parentSelect) parentSelect.value = '';
                 loadCategories();
                 // Remettre le bouton en mode "Ajouter"
                 submitButton.textContent = 'Ajouter la catégorie';

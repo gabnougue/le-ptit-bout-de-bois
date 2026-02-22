@@ -65,7 +65,7 @@ router.get('/categories', async (req, res) => {
 
 // Ajouter une catégorie (admin)
 router.post('/categories', requireAdmin, async (req, res) => {
-  const { name, emoji, description } = req.body;
+  const { name, emoji, description, parent_id } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Nom de catégorie requis' });
@@ -73,8 +73,8 @@ router.post('/categories', requireAdmin, async (req, res) => {
 
   try {
     const result = await db.run(
-      'INSERT INTO categories (name, emoji, description) VALUES (?, ?, ?)',
-      [name.trim(), emoji || '🪵', description || '']
+      'INSERT INTO categories (name, emoji, description, parent_id) VALUES (?, ?, ?, ?)',
+      [name.trim(), emoji || '🪵', description || '', parent_id || null]
     );
 
     res.json({
@@ -84,7 +84,8 @@ router.post('/categories', requireAdmin, async (req, res) => {
         id: result.id,
         name: name.trim(),
         emoji: emoji || '🪵',
-        description: description || ''
+        description: description || '',
+        parent_id: parent_id || null
       }
     });
   } catch (error) {
@@ -99,7 +100,7 @@ router.post('/categories', requireAdmin, async (req, res) => {
 // Modifier une catégorie (admin)
 router.put('/categories/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, emoji, description } = req.body;
+  const { name, emoji, description, parent_id } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Nom de catégorie requis' });
@@ -111,8 +112,8 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
     const oldName = oldCat ? oldCat.name : null;
 
     const result = await db.run(
-      'UPDATE categories SET name = ?, emoji = ?, description = ? WHERE id = ?',
-      [name.trim(), emoji || '🪵', description || '', id]
+      'UPDATE categories SET name = ?, emoji = ?, description = ?, parent_id = ? WHERE id = ?',
+      [name.trim(), emoji || '🪵', description || '', parent_id || null, id]
     );
 
     if (result.changes === 0) {
@@ -148,6 +149,14 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Vérifier si des sous-catégories existent
+    const subCount = await db.get('SELECT COUNT(*) as count FROM categories WHERE parent_id = ?', [id]);
+    if (subCount.count > 0) {
+      return res.status(400).json({
+        error: `Impossible de supprimer : ${subCount.count} sous-catégorie(s) existent. Supprimez-les d'abord.`
+      });
+    }
+
     // Vérifier si des produits utilisent cette catégorie
     const row = await db.get(
       'SELECT COUNT(*) as count FROM products WHERE category = (SELECT name FROM categories WHERE id = ?)',
