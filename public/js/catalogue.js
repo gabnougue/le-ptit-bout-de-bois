@@ -11,46 +11,33 @@ let currentWoodType = 'all';
 let currentSearch = '';
 let currentMaxPrice = 100;
 
-// Charger les catégories
+// Charger les catégories (sans render — loadProducts() s'en charge une fois les produits prêts)
 async function loadCategories() {
   try {
-    // Utiliser l'API settings pour avoir toutes les catégories définies dans l'admin
     const response = await fetch('/api/settings/categories');
     const categoriesData = await response.json();
-
-    // Garder les objets complets {id, name, parent_id, ...} pour gérer les sous-catégories
     allCategories = categoriesData.map(c => typeof c === 'object' ? c : { id: null, name: c, parent_id: null });
-
-    renderCategoryFilters();
   } catch (error) {
     console.error('Erreur chargement catégories:', error);
-    // Fallback sur l'API products si settings échoue
     try {
       const resp = await fetch('/api/products/meta/categories');
       const fallbackData = await resp.json();
       allCategories = fallbackData.map(c => typeof c === 'object' ? c : { id: null, name: c, parent_id: null });
-      renderCategoryFilters();
     } catch (e) { console.error('Erreur fallback catégories:', e); }
   }
 }
 
-// Charger les types de bois
+// Charger les types de bois (sans render — loadProducts() s'en charge une fois les produits prêts)
 async function loadWoodTypes() {
   try {
-    // Utiliser l'API settings pour avoir tous les types de bois définis
     const response = await fetch('/api/settings/wood-types');
     const woodTypesData = await response.json();
-
     allWoodTypes = woodTypesData.map(w => typeof w === 'object' ? w.name : w);
-
-    renderWoodTypeFilters();
   } catch (error) {
     console.error('Erreur chargement types de bois:', error);
-    // Fallback
     try {
       const resp = await fetch('/api/products/meta/wood-types');
       allWoodTypes = await resp.json();
-      renderWoodTypeFilters();
     } catch (e) { console.error('Erreur fallback bois:', e); }
   }
 }
@@ -646,9 +633,10 @@ function resetFilters() {
 }
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', () => {
-  loadCategories();
-  loadWoodTypes();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Attendre que catégories et types de bois soient prêts,
+  // puis charger les produits — qui déclenchera le render des filtres
+  await Promise.all([loadCategories(), loadWoodTypes()]);
   loadProducts();
   setupSearch();
 
