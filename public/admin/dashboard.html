@@ -242,73 +242,88 @@
 
         <!-- Coups de cœur -->
         <div class="admin-section">
-          <h2 style="margin-bottom: 0.5rem;">⭐ Coups de cœur</h2>
-          <p style="color: var(--slate-gray); font-size: 0.9rem; margin-bottom: 1.5rem;">
-            Choisissez jusqu'à <strong>3 articles</strong> mis en avant sur la page d'accueil.
-          </p>
-          <div style="margin-bottom: 1.5rem;">
-            <button onclick="openFeaturedPicker()" id="featured-add-btn" class="btn btn-primary">Choisir un article ⭐</button>
+          <div onclick="toggleFeaturedSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <h2 style="margin: 0;">⭐ Coups de cœur</h2>
+            <span id="featured-chevron" style="font-size: 1.2rem; color: var(--wood-medium); transition: transform 0.3s ease; transform: rotate(0deg);">▶</span>
           </div>
-          <p style="color: var(--wood-dark); font-weight: 600; margin-bottom: 0.75rem;">Actuellement mis en avant :</p>
-          <div id="featured-list" style="display: grid; gap: 0.75rem; min-height: 50px; padding: 1rem; background: var(--cream); border-radius: 8px; border: 2px solid var(--wood-light);">
-            <span style="color: var(--slate-gray); font-style: italic;">Chargement…</span>
+          <div id="featured-collapsible" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease;">
+            <p style="color: var(--slate-gray); font-size: 0.9rem; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+              Choisissez jusqu'à <strong>3 articles</strong> mis en avant sur la page d'accueil.
+            </p>
+            <div style="margin-bottom: 1.5rem;">
+              <button onclick="openFeaturedPicker()" id="featured-add-btn" class="btn btn-primary">Choisir un article ⭐</button>
+            </div>
+            <p style="color: var(--wood-dark); font-weight: 600; margin-bottom: 0.75rem;">Actuellement mis en avant :</p>
+            <div id="featured-list" style="display: grid; gap: 0.75rem; min-height: 50px; padding: 1rem; background: var(--cream); border-radius: 8px; border: 2px solid var(--wood-light);">
+              <span style="color: var(--slate-gray); font-style: italic;">Chargement…</span>
+            </div>
           </div>
         </div>
 
         <!-- Gestion des catégories -->
         <div class="admin-section">
-          <h2 style="margin-bottom: 1.5rem;">🗂️ Catégories de produits</h2>
+          <div onclick="toggleCategoriesSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <h2 style="margin: 0;">🗂️ Catégories de produits</h2>
+            <span id="categories-chevron" style="font-size: 1.2rem; color: var(--wood-medium); transition: transform 0.3s ease; transform: rotate(0deg);">▶</span>
+          </div>
+          <div id="categories-collapsible" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease;">
 
-          <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter une catégorie</label>
-            <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
-              <input type="text" id="new-category-input" placeholder="Nom de la catégorie"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
-              <input type="text" id="new-category-emoji" placeholder="Emoji" maxlength="4"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
-              <input type="text" id="new-category-description" placeholder="Description courte"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
-              <select id="new-category-parent"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box; color: var(--wood-dark); background: white;">
-                <option value="">— Catégorie principale (pas de parent) —</option>
-              </select>
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button type="button" onclick="addCategory()" id="category-submit-btn" class="btn btn-primary">Ajouter la catégorie</button>
-                <button type="button" onclick="cancelEditCategory()" id="category-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
+            <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter une catégorie</label>
+              <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
+                <input type="text" id="new-category-input" placeholder="Nom de la catégorie"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+                <input type="text" id="new-category-emoji" placeholder="Emoji" maxlength="4"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+                <input type="text" id="new-category-description" placeholder="Description courte"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+                <select id="new-category-parent"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box; color: var(--wood-dark); background: white;">
+                  <option value="">— Catégorie principale (pas de parent) —</option>
+                </select>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" onclick="addCategory()" id="category-submit-btn" class="btn btn-primary">Ajouter la catégorie</button>
+                  <button type="button" onclick="cancelEditCategory()" id="category-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Catégories existantes</label>
-            <div id="categories-list" style="display: grid; gap: 0.75rem;">
-              <span style="color: var(--slate-gray);">Chargement...</span>
+            <div>
+              <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Catégories existantes</label>
+              <div id="categories-list" style="display: grid; gap: 0.75rem;">
+                <span style="color: var(--slate-gray);">Chargement...</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Gestion des types de bois -->
         <div class="admin-section">
-          <h2 style="margin-bottom: 1.5rem;">🪵 Types de bois et leurs vertus</h2>
+          <div onclick="toggleWoodTypesSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <h2 style="margin: 0;">🪵 Types de bois et leurs vertus</h2>
+            <span id="wood-types-chevron" style="font-size: 1.2rem; color: var(--wood-medium); transition: transform 0.3s ease; transform: rotate(0deg);">▶</span>
+          </div>
+          <div id="wood-types-collapsible" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease;">
 
-          <div style="margin-bottom: 1.5rem;">
-            <label id="wood-type-form-label" style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter un type de bois</label>
-            <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
-              <input type="text" id="new-wood-type-input" placeholder="Nom du type de bois"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
-              <textarea id="new-wood-type-description" placeholder="Description des vertus de ce bois (optionnel)" rows="3"
-                style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; resize: vertical; box-sizing: border-box;"></textarea>
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button type="button" onclick="addWoodType()" id="wood-type-submit-btn" class="btn btn-primary">Ajouter</button>
-                <button type="button" onclick="cancelEditWoodType()" id="wood-type-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
+            <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+              <label id="wood-type-form-label" style="display: block; margin-bottom: 0.5rem; color: var(--wood-dark); font-weight: 600;">Ajouter un type de bois</label>
+              <div style="display: grid; gap: 0.75rem; margin-bottom: 0.75rem;">
+                <input type="text" id="new-wood-type-input" placeholder="Nom du type de bois"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; box-sizing: border-box;">
+                <textarea id="new-wood-type-description" placeholder="Description des vertus de ce bois (optionnel)" rows="3"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--wood-light); border-radius: 8px; font-family: 'Raleway', sans-serif; resize: vertical; box-sizing: border-box;"></textarea>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" onclick="addWoodType()" id="wood-type-submit-btn" class="btn btn-primary">Ajouter</button>
+                  <button type="button" onclick="cancelEditWoodType()" id="wood-type-cancel-btn" class="btn btn-secondary" style="display: none;">Annuler</button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Types de bois existants</label>
-            <div id="wood-types-list" style="display: grid; gap: 0.75rem;">
-              <span style="color: var(--slate-gray);">Chargement...</span>
+            <div>
+              <label style="display: block; margin-bottom: 1rem; color: var(--wood-dark); font-weight: 600;">Types de bois existants</label>
+              <div id="wood-types-list" style="display: grid; gap: 0.75rem;">
+                <span style="color: var(--slate-gray);">Chargement...</span>
+              </div>
             </div>
           </div>
         </div>

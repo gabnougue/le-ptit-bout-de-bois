@@ -2,10 +2,46 @@
 // Script admin - le p'tit bout de bois
 // ====================================
 
-// Toggle section Mot de passe (collapse / expand)
+// Toggle sections paramètres (collapse / expand)
 function togglePasswordSection() {
     const content = document.getElementById('password-collapsible');
     const chevron = document.getElementById('password-chevron');
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        content.style.maxHeight = '0';
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        chevron.style.transform = 'rotate(90deg)';
+    }
+}
+
+function toggleFeaturedSection() {
+    const content = document.getElementById('featured-collapsible');
+    const chevron = document.getElementById('featured-chevron');
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        content.style.maxHeight = '0';
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        chevron.style.transform = 'rotate(90deg)';
+    }
+}
+
+function toggleCategoriesSection() {
+    const content = document.getElementById('categories-collapsible');
+    const chevron = document.getElementById('categories-chevron');
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        content.style.maxHeight = '0';
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        chevron.style.transform = 'rotate(90deg)';
+    }
+}
+
+function toggleWoodTypesSection() {
+    const content = document.getElementById('wood-types-collapsible');
+    const chevron = document.getElementById('wood-types-chevron');
     if (content.style.maxHeight && content.style.maxHeight !== '0px') {
         content.style.maxHeight = '0';
         chevron.style.transform = 'rotate(0deg)';
