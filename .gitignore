@@ -40,3 +40,14 @@ Thumbs.db
 
 # Thèmes (si non utilisés)
 themes/
+# Dossiers de build
+dist/
+build/
+out/
+.next/
+
+# Vercel
+.vercel
+
+# Dossier Claude (config locale)
+.claude/
