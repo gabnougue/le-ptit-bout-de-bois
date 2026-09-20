@@ -1,84 +1,36 @@
-# 🪵 Le P'tit Bout de Bois
+# Le p'tit bout de bois
 
-**Boutique en ligne de créations artisanales en bois** par Jean-Michel Nougué-Lecocq
+Boutique en ligne réalisée pour un artisan qui crée et vend des objets en bois
+tournés et sculptés. Le besoin : présenter ses créations, encaisser les commandes
+en ligne et administrer lui-même son catalogue.
 
-## 📋 Description
+<!-- CAPTURE D'ÉCRAN : ajouter ici une image du site (ex: ![Aperçu](docs/screenshot.png)) -->
+<!-- SITE EN LIGNE : ajouter ici le lien vers le site en production -->
 
-Site e-commerce complet pour la vente de créations artisanales en bois : jeux, accessoires, bijoux bois & pierres, et objets décoratifs.
+## Stack technique
 
-## 🛠️ Technologies utilisées
+- **Node.js** + **Express** (serveur et API REST)
+- **Turso / libSQL** en production, **SQLite** en développement
+- **HTML, CSS et JavaScript natifs** côté client, sans framework
+- **Stripe** pour le paiement, **Resend** pour les emails transactionnels
+- **Vercel Blob** + **Sharp** pour le stockage et l'optimisation des images
+- **Helmet**, **express-rate-limit**, **bcrypt** et sessions par cookie pour la sécurité
+- Déploiement **Vercel**
 
-### Backend
-- **Node.js** + **Express.js** - Serveur web et API REST
-- **Turso (libSQL)** - Base de données SQLite distribuée pour la production
-- **SQLite3** - Base de données locale pour le développement
-- **Stripe** - Paiement en ligne sécurisé
-- **Resend / Nodemailer** - Envoi d'emails transactionnels
-- **Multer + Sharp** - Upload et optimisation des images
-- **Vercel Blob** - Stockage d'images en cloud
-- **Helmet** - Sécurité HTTP headers
-- **Express Rate Limit** - Protection contre les attaques DDoS
-- **bcrypt** - Hashage des mots de passe
+## Fonctionnalités
 
-### Frontend
-- **HTML5** - Structure des pages
-- **CSS3 Vanilla** - Styles personnalisés avec variables CSS
-- **JavaScript Vanilla** - Logique côté client, sans framework
+- Catalogue filtrable par catégorie et par essence de bois, avec fiches produit
+  détaillées et galerie d'images.
+- Panier et tunnel de commande avec paiement en ligne via Stripe et calcul
+  automatique des frais de livraison.
+- Back-office protégé par authentification : gestion des produits, des images,
+  des commandes, des messages de contact et des paramètres de la boutique.
+- Emails automatiques de confirmation de commande et de prise de contact.
+- Thèmes visuels et mode maintenance activables côté serveur.
 
-### Hébergement
-- **Vercel** - Déploiement et hébergement
+## Déploiement
 
-## 🚀 Installation
-
-```bash
-# Cloner le repo
-git clone https://github.com/gabnougue/le-ptit-bout-de-bois.git
-cd le-ptit-bout-de-bois
-
-# Installer les dépendances
-npm install
-
-# Configurer les variables d'environnement
-cp .env.example .env
-# Éditer .env avec vos clés API
-
-# Initialiser la base de données
-npm run init-db
-
-# Lancer en développement
-npm run dev
-```
-
-## 📁 Structure du projet
-
-```
-le-ptit-bout-de-bois/
-├── public/              # Fichiers statiques
-│   ├── admin/           # Interface d'administration
-│   ├── css/             # Styles CSS
-│   ├── js/              # Scripts JavaScript
-│   └── images/          # Images du site
-├── server/              # Code backend
-│   ├── routes/          # Routes API Express
-│   └── models/          # Modèles et migrations DB
-├── server.js            # Point d'entrée
-└── package.json
-```
-
-## ✨ Fonctionnalités
-
-- 🛒 Catalogue produits par catégories (Jeux, Accessoires, Bijoux, Déco)
-- 🌲 Filtrage par type de bois
-- �️ Panier d'achat persistant
-- � Paiement sécurisé via Stripe
-- 📧 Système de messagerie client/admin
-- 📱 Design responsive mobile-first
-- � Panel d'administration complet
-
-## 🔗 Lien avec La P'tite Perlouze
-
-Ce site est lié à [La P'tite Perlouze](https://github.com/gabnougue/la-ptite-perlouze), la boutique de bijoux fantaisie d'Yvonne Lecocq. Certains produits bijoux bois & pierres peuvent avoir des liens croisés entre les deux boutiques.
-
----
-
-*Fait avec ❤️ en France*
+Hébergement sur **Vercel** (fonction serverless Node.js configurée dans
+`vercel.json`), déploiement continu depuis la branche `main`. La base de données
+est hébergée sur **Turso** et les images sur **Vercel Blob**. Toutes les clés et
+identifiants proviennent des variables d'environnement Vercel (voir `.env.example`).
