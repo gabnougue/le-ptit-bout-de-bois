@@ -11,7 +11,7 @@ async function updateAdminPassword() {
         authToken: process.env.TURSO_AUTH_TOKEN
     });
 
-    const newPassword = process.env.ADMIN_PASSWORD || '***MOT_DE_PASSE_RETIRE***';
+    const newPassword = process.env.ADMIN_PASSWORD;
 
     console.log('🔐 Mise à jour du mot de passe admin...');
 

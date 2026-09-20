@@ -15,7 +15,7 @@ npm run init-db
 Cela va créer :
 - La base de données SQLite
 - Les tables nécessaires
-- Un compte admin (username: `admin`, password: `***MOT_DE_PASSE_RETIRE***`)
+- Un compte admin (username: `admin`, mot de passe défini par ADMIN_PASSWORD)
 - 6 produits d'exemple
 
 ### 3️⃣ Démarrer le serveur
@@ -38,7 +38,7 @@ Le site est accessible sur **http://localhost:3001**
 ### Administration
 - 🔐 **Login** : http://localhost:3001/admin
   - Username : `admin`
-  - Password : `***MOT_DE_PASSE_RETIRE***`
+  - Password : celui défini dans `ADMIN_PASSWORD` (`.env`)
 - 📊 **Dashboard** : http://localhost:3001/admin/dashboard
 
 ---
