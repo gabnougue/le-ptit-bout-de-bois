@@ -51,3 +51,6 @@ out/
 
 # Dossier Claude (config locale)
 .claude/
+
+# Consignes d'outil local
+CLAUDE.md
