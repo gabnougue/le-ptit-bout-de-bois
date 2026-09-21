@@ -4,8 +4,9 @@ Boutique en ligne réalisée pour un artisan qui crée et vend des objets en boi
 tournés et sculptés. Le besoin : présenter ses créations, encaisser les commandes
 en ligne et administrer lui-même son catalogue.
 
-<!-- CAPTURE D'ÉCRAN : ajouter ici une image du site (ex: ![Aperçu](docs/screenshot.png)) -->
-<!-- SITE EN LIGNE : ajouter ici le lien vers le site en production -->
+![Page d'accueil de la boutique](docs/screenshot.png)
+
+**Site en ligne :** <https://www.leptitboutdebois.fr/>
 
 ## Stack technique
 
