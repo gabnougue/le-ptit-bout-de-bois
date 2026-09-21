@@ -317,7 +317,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
     const to = emailData.to;
     const subject = emailData.subject;
 
-    console.log('📧 Email entrant reçu:', { from, to, subject, emailId });
+    console.log('📧 Email entrant reçu:', { emailId });
 
     // ========== FILTRE ANTI-BOUCLE ==========
     // Ignorer les emails provenant du vendeur ou du système
@@ -330,7 +330,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
         fromEmail.toLowerCase().includes('noreply') ||
         fromEmail.toLowerCase().includes('no-reply') ||
         fromEmail.toLowerCase().includes('@resend.dev')) {
-      console.log('🚫 Email ignoré (provient du vendeur ou du système):', fromEmail);
+      console.log('🚫 Email ignoré (expéditeur vendeur ou système)');
       return res.status(200).json({ success: true, ignored: true, reason: 'vendor_or_system_email' });
     }
     
@@ -355,7 +355,6 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
 
         if (response.ok) {
           const emailDetails = await response.json();
-          console.log('📨 Réponse API receiving:', JSON.stringify(emailDetails).substring(0, 500));
 
           // Le contenu peut être dans text, html, ou dans un objet imbriqué
           messageContent = emailDetails.text || emailDetails.html || '';
@@ -364,7 +363,6 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
           // Récupérer les pièces jointes si présentes
           if (emailDetails.attachments && emailDetails.attachments.length > 0) {
             console.log(`📎 ${emailDetails.attachments.length} pièce(s) jointe(s) détectée(s)`);
-            console.log('📎 Format pièces jointes:', JSON.stringify(emailDetails.attachments[0]));
             for (const att of emailDetails.attachments) {
               try {
                 // Télécharger le contenu de la pièce jointe via l'API Resend
@@ -379,11 +377,10 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                   });
                   if (attMetaResponse.ok) {
                     const attMeta = await attMetaResponse.json();
-                    console.log('📎 Métadonnées pièce jointe:', JSON.stringify(attMeta).substring(0, 200));
                     
                     // Télécharger le contenu depuis download_url
                     if (attMeta.download_url) {
-                      console.log(`📎 Téléchargement depuis: ${attMeta.download_url.substring(0, 100)}...`);
+                      console.log('📎 Téléchargement du contenu de la pièce jointe');
                       const contentResponse = await fetch(attMeta.download_url);
                       if (contentResponse.ok) {
                         const attBuffer = await contentResponse.arrayBuffer();
@@ -394,7 +391,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                           mimetype: attMeta.content_type || att.content_type || 'application/octet-stream',
                           size: attBuffer.byteLength
                         });
-                        console.log(`📎 Pièce jointe récupérée via API: ${attMeta.filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+                        console.log(`📎 Pièce jointe récupérée via API (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
                       } else {
                         console.log(`⚠️ Erreur téléchargement contenu: ${contentResponse.status}`);
                       }
@@ -413,7 +410,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                       mimetype: att.content_type || 'application/octet-stream',
                       size: attBuffer.byteLength
                     });
-                    console.log(`📎 Pièce jointe récupérée: ${att.filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+                    console.log(`📎 Pièce jointe récupérée (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
                   }
                 } else if (att.content) {
                   // Contenu déjà en base64
@@ -441,7 +438,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                 const bodyMatch = rawEmail.match(/\r?\n\r?\n([\s\S]*)/);
                 if (bodyMatch) {
                   messageContent = bodyMatch[1].trim();
-                  console.log('📨 Contenu extrait du raw:', messageContent.substring(0, 100));
+                  console.log('📨 Contenu extrait du raw email');
                 }
               }
             } catch (rawError) {
@@ -467,7 +464,6 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
       const webhookAttachments = emailData.attachments || emailData.files || req.body.attachments || [];
       console.log(`📎 Vérification webhook pour pièces jointes: ${webhookAttachments.length} trouvée(s)`);
       if (webhookAttachments.length > 0) {
-        console.log('📎 Format webhook attachments:', JSON.stringify(webhookAttachments[0]).substring(0, 500));
       }
       
       for (const att of webhookAttachments) {
@@ -483,7 +479,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
             mimetype: mimetype,
             size: att.size || content.length || 0
           });
-          console.log(`📎 Pièce jointe webhook ajoutée: ${filename}`);
+          console.log('📎 Pièce jointe webhook ajoutée');
         } else if (att.id && emailId) {
           // Si on a un ID de pièce jointe, récupérer les métadonnées puis télécharger
           try {
@@ -496,7 +492,6 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
             });
             if (attMetaResponse.ok) {
               const attMeta = await attMetaResponse.json();
-              console.log('📎 Métadonnées:', JSON.stringify(attMeta).substring(0, 200));
               
               // Télécharger depuis download_url
               if (attMeta.download_url) {
@@ -510,7 +505,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                     mimetype: attMeta.content_type || mimetype,
                     size: attBuffer.byteLength
                   });
-                  console.log(`📎 Pièce jointe téléchargée via API: ${attMeta.filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+                  console.log(`📎 Pièce jointe téléchargée via API (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
                 } else {
                   console.log(`⚠️ Erreur téléchargement contenu: ${contentResponse.status}`);
                 }
@@ -525,7 +520,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
           // Si c'est une URL, télécharger le contenu
           try {
             const attUrl = att.url || att.download_url;
-            console.log(`📎 Téléchargement pièce jointe depuis URL: ${attUrl}`);
+            console.log('📎 Téléchargement de la pièce jointe');
             const attResponse = await fetch(attUrl);
             if (attResponse.ok) {
               const attBuffer = await attResponse.arrayBuffer();
@@ -536,7 +531,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
                 mimetype: mimetype,
                 size: attBuffer.byteLength
               });
-              console.log(`📎 Pièce jointe téléchargée: ${filename} (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
+              console.log(`📎 Pièce jointe téléchargée (${(attBuffer.byteLength / 1024).toFixed(1)}KB)`);
             }
           } catch (dlError) {
             console.error('❌ Erreur téléchargement:', dlError.message);
@@ -545,7 +540,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
       }
     }
     
-    console.log('📨 Contenu final:', messageContent ? messageContent.substring(0, 100) : '(vide)');
+    console.log('📨 Contenu final:', messageContent ? 'présent' : '(vide)');
     console.log(`📎 Total pièces jointes: ${attachments.length}`);
 
     // ========== FORWARDING EMAILS VENDEUR ==========
@@ -572,7 +567,6 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
 
     // Nettoyer le contenu pour ne garder que le nouveau message (retirer les citations)
     messageContent = cleanEmailContent(messageContent);
-    console.log('📨 Contenu nettoyé:', messageContent);
 
     // Extraire l'ID du thread depuis le sujet
     const threadIdMatch = subject?.match(/\[#THREAD-(\d+)\]/);
@@ -591,7 +585,7 @@ router.post('/webhook/inbound', express.json({ limit: '50mb' }), async (req, res
         customerName = from?.name || customerEmail;
       }
 
-      console.log('📧 Création thread pour:', { customerEmail, customerName, subject: subject || 'Message sans sujet' });
+      console.log('📧 Création d\'un nouveau thread');
 
       // Créer d'abord un contact (requis par la clé étrangère)
       const contactResult = await db.run(
