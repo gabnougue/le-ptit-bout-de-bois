@@ -27,7 +27,6 @@ async function updateAdminPassword() {
 
         console.log('✅ Mot de passe admin mis à jour avec succès !');
         console.log('   Username: admin');
-        console.log('   Nouveau mot de passe: ' + newPassword);
 
     } catch (error) {
         console.error('❌ Erreur:', error.message);

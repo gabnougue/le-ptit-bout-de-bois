@@ -168,7 +168,6 @@ async function initDatabase() {
     console.log('   Base de données initialisée avec succès !');
     console.log('🌳 ════════════════════════════════════════ 🌳');
     console.log(`\n👤 Login admin: ${adminUsername}`);
-    console.log(`🔑 Mot de passe: ${adminPassword}`);
     console.log('\n⚠️  N\'oubliez pas de changer le mot de passe admin !');
 
   } catch (err) {
